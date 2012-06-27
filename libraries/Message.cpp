@@ -6,7 +6,7 @@ Message::Message(){
 	command = NULL;
 }
 
-Message::Message(byte col, byte cell, byte[] command)
+Message::Message(char col, char cell, char[] command)
 {
 	this->col = col;
 	this->cell = cell;

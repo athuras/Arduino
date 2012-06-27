@@ -5,15 +5,15 @@ struct Message{
 	public:
 	//constructor
 	Message();
-	Message(byte col, byte cell, byte[] command);
+	Message(char col, char cell, char[] command);
 	
 	//serialize to string for Wire.write(char[]);
 	char[] serialize();
 	
 	//contents
-	byte col;
-	byte cell;
-	byte[8] command;
+	char col;
+	char cell;
+	char[8] command;
 
 };
 
