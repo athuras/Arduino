@@ -3,7 +3,7 @@
 Message::Message(){
 	col = 0;
 	cell = 0;
-	command = null;
+	command = NULL;
 }
 
 Message::Message(byte col, byte cell, byte[] command)
