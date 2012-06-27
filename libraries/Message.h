@@ -1,3 +1,6 @@
+#ifndef MESSAGE_H
+#define MESSAGE_H
+
 struct Message{
 	public:
 	//constructor
@@ -13,3 +16,5 @@ struct Message{
 	byte[8] command;
 
 }
+
+#endif
