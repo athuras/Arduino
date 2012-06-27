@@ -15,6 +15,6 @@ struct Message{
 	byte cell;
 	byte[8] command;
 
-}
+};
 
 #endif
