@@ -10,6 +10,8 @@ struct Message{
 	//serialize to string for Wire.write(char[]);
 	void serialize(char* array, int &size);
 	char* serialize();
+	void deserialize(char* array, int size);
+	void empty();
 	
 	//contents
 	char col;

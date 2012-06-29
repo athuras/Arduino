@@ -28,3 +28,15 @@ char* Message::serialize(){
 	memcpy((void*) temp_array[2], (void*) this->command, COMMAND_LENGTH);
 	return temp_array;
 }
+
+void Message::deserialize(char* input_array, int size){
+	this->col = input_array[0];
+	this->cell = input_array[1];
+	memcpy((void*) this->command, (void*) input_array[2], COMMAND_LENGTH);
+}
+
+void Message::empty(){
+	this->col = 0;
+	this->cell = 0;
+	memset(this->command, 0, COMMAND_LENGTH);
+}
