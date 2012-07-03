@@ -47,7 +47,7 @@ void loop(){
 				False if no device at default factory location, or error in transmission
 */
 boolean probe_default(){
-   byte result = genericCommand(FACTORY_ADDRESS, 0, 1);
+   byte result = generic_command(FACTORY_ADDRESS, 0, 1);
    if (result == 0){ 	//successful send and receive
 		return true;
    }
@@ -65,16 +65,16 @@ void unlock(byte column, byte cell){
 void query(byte column, byte cell){
    generic_command(column, cell, 1); //primes the slave to send status information on next request
    Wire.requestFrom(column, RESPONSE_LENGTH);
-   while(Wire.availible()){
-		//read the response
+   while(Wire.available()){
+	char c = Wire.read();//read the response
    }
 }
 
 void set_new_address(byte column, byte cell){
    generic_command(column, cell, 2);
    Wire.requestFrom(column, RESPONSE_LENGTH);
-   while(Wire.availible()){
-		//read the response
+   while(Wire.available()){
+	char c = Wire.read();//read the response
    }
 }
 
@@ -128,7 +128,7 @@ void serialEvent(){
     if (inChar == '\n') {
       stringComplete = true;
     } 
-
+  }
 }
 
 
