@@ -9,20 +9,15 @@
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
-
-serialize KEYWORD2
-deserialize KEYWORD2
-empty KEYWORD2
-
+serialize	KEYWORD2
+deserialize	KEYWORD2
+empty	KEYWORD2
 #######################################
 # Instances (KEYWORD2)
 #######################################
-
-Message  KEYWORD2
-
+Message	KEYWORD2
 #######################################
 # Constants (LITERAL1)
 #######################################
-
-COMMAND_LENGTH  LITERAL1
-OUTPUT_LENGTH  LITERAL1
+COMMAND_LENGTH	LITERAL1
+OUTPUT_LENGTH	LITERAL1
