@@ -3,6 +3,7 @@
 char input[3];
 boolean isInputComplete = false;
 String output;
+int readValue;
 
 void setup(){
    Wire.begin(99); 
@@ -23,6 +24,12 @@ void loop(){
         if (input[1] == '3'){
            digitalWrite(13, LOW);
         } 
+     }
+     if (input[0] == 'C'){
+       //need to read status of pin
+       //dummied to pin 5 for now
+       pinMode(5, INPUT);
+       readValue = digitalRead(5);
      }
   }
   isInputComplete = false;
@@ -50,5 +57,11 @@ void requestEvent(){
      Wire.write("AAA"); 
   } if (input[0] == 'B'){
     Wire.write("BBB");
+  } if (input[0] == 'C'){
+    if (readValue == 0){
+       Wire.write("C00");
+    } else if (readValue == 1){
+       Wire.write("C11");
+    } 
   }
 }
