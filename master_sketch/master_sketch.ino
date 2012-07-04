@@ -6,10 +6,11 @@
 prog_char unlockcode[] PROGMEM = {49, 49, 49, 49, 49, 49, 49, 49};   // "String 0" etc are strings to store - change to suit.
 prog_char querycode[] PROGMEM =   {50, 50, 50, 50, 50, 50, 50, 50};
 prog_char new_addresscode[] PROGMEM =   {51, 51, 51, 51, 51, 51, 51} ; 
+prog_char limitswitchcode[] PROGMEM = {52, 52, 52, 52, 52, 52, 52, 52};
 
 PROGMEM const char *string_table[] = 	   // change "string_table" name to suit
 {   
-  unlockcode, querycode, new_addresscode};
+  unlockcode, querycode, new_addresscode, limitswitchcode};
 
 //global variable
 //temporary buffer to hold commands extracted from flash memory
@@ -19,13 +20,16 @@ char flash_buffer[8];
 String frontend_input = "";
 boolean stringComplete = false;
 
-const byte FACTORY_ADDRESS = 99;
+String errorMsg = "";
+
+const byte FACTORY_ADDRESS = 99; //put this into flash
 const byte RESPONSE_LENGTH = 24;
 
 void setup(){
   Wire.begin();
   Serial.begin(9600);
   frontend_input.reserve(200);
+  errorMsg.reserve(200);
 }
 
 void loop(){
@@ -59,15 +63,41 @@ boolean probe_default(){
 */
 void unlock(byte column, byte cell){
 	//should make this function lock up the line with status request
-   generic_command(column, cell, 0);
+   byte result = generic_command(column, cell, 0);
+   if (result > 0 && result < 5){
+		//default error states
+   } else if (result == 0){
+		//successful unlock
+		delay(100); //let door open
+		while (isLimitSwitchOpen){	
+			//lock while door still open
+		}
+   } else {
+		//other error state
+   }
 }
 
-void query(byte column, byte cell){
+byte query(byte column, byte cell){
    generic_command(column, cell, 1); //primes the slave to send status information on next request
    Wire.requestFrom(column, RESPONSE_LENGTH);
    while(Wire.available()){
 	char c = Wire.read();//read the response
    }
+}
+
+//query only the state of the limit switch
+//true if door open
+//false if door closed
+boolean isLimitSwitchOpen(byte column, byte cell){
+	generic_command(column, cell, 3);
+	Wire.requestFrom(column, RESPONSE_LENGTH);
+	byte response_buffer[RESPONSE_LENGTH];
+	byte cnt = 0;
+	while(Wire.available()){
+		response_buffer[cnt] = (byte)Wire.read();
+		cnt++;
+	}
+	//do logic here to determine the infomation in the response
 }
 
 void set_new_address(byte column, byte cell){
@@ -115,23 +145,18 @@ void emptyBuffer(){
 
 /*
 	Called between every loop called
-	Tries to reach off serial line
+	Tries to read off serial line
 */
-void serialEvent(){
+void serialEvent(int v){
   while (Serial.available()) {
-    // get the new byte:
     char inChar = (char)Serial.read(); 
-    // add it to the inputString:
     frontend_input += inChar;
-    // if the incoming character is a newline, set a flag
-    // so the main loop can do something about it:
+	//assume null terminated for now
     if (inChar == '\n') {
       stringComplete = true;
     } 
   }
 }
-
-
 
 
 
