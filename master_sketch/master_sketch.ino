@@ -3,14 +3,13 @@
 #include <avr/pgmspace.h>
 
 //set up commands into flash memory
-prog_char unlockcode[] PROGMEM = {49, 49, 49, 49, 49, 49, 49, 49};   // "String 0" etc are strings to store - change to suit.
+prog_char unlockcode[] PROGMEM = {49, 49, 49, 49, 49, 49, 49, 49};
 prog_char querycode[] PROGMEM =   {50, 50, 50, 50, 50, 50, 50, 50};
 prog_char new_addresscode[] PROGMEM =   {51, 51, 51, 51, 51, 51, 51} ; 
 prog_char limitswitchcode[] PROGMEM = {52, 52, 52, 52, 52, 52, 52, 52};
 
 PROGMEM const char *string_table[] = 	   // change "string_table" name to suit
-{   
-  unlockcode, querycode, new_addresscode, limitswitchcode};
+{unlockcode, querycode, new_addresscode, limitswitchcode};
 
 //global variable
 //temporary buffer to hold commands extracted from flash memory
@@ -23,13 +22,13 @@ boolean stringComplete = false;
 String errorMsg = "";
 
 const byte FACTORY_ADDRESS = 99; //put this into flash
-const byte RESPONSE_LENGTH = 24;
+const byte RESPONSE_LENGTH = 24; 
 
 void setup(){
   Wire.begin();
   Serial.begin(9600);
-  frontend_input.reserve(200);
-  errorMsg.reserve(200);
+  frontend_input.reserve(24);
+  errorMsg.reserve(100);
 }
 
 void loop(){

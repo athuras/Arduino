@@ -1,0 +1,26 @@
+Test Plan:
+
+Message 1:
+Message to send: "A<pin#>"
+Expected results: 
+	1: pin# on slave to go to go high
+	2: receive message on serial that pin# is on, or if pin is out of scope, an error message
+
+Message 2:
+Message to send: "B<pin#>"
+Expected results: 
+	1: pin# on slave to go to go low
+	2: receive message on serial that pin# is low, or if pin is out of scope, an error message
+	
+Message 3:
+Message to send: "C<pin#>"
+Expected results:
+	1: high/low on pin# on slave
+	2: receive message on serial of the state of pin#, or if pin is out of scope, an error message
+	
+Message 4:
+Message to send: "D<pin#>"
+Expected results:
+	1: pin# on slave to go high for 5 seconds (5000ms)
+	2: receive stream of responses over serial saying that the line is locked, or if pin is out of scope an error message
+	3: any other messages sent during teh locked will be queued and preformed at end
