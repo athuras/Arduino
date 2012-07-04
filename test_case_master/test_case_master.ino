@@ -1,8 +1,8 @@
 #include <Wire.h>
 
-char frontEndInput[3];
+byte frontEndInput[3];
 boolean isInputComplete = false;
-char response[24];
+byte response[3];
 boolean isResponseComplete = false;
 
 void setup(){
@@ -11,6 +11,7 @@ void setup(){
 }
 
 void loop(){
+  serialEvent();
   if (isInputComplete){
       if (frontEndInput[0] == 'A'){ //set pin to high
           byte result = 0;
@@ -18,49 +19,69 @@ void loop(){
           Wire.beginTransmission(99);
           Wire.write(frontEndInput, 3);
           result = Wire.endTransmission();
-          if (result != 0){
-             //we are in error 
-          }
-          //end command
           
-          //request acknowledgement
-          Wire.requestFrom(99, 24);
+          requestCallBack();
           
-          byte cnt = 0;
-          isResponseComplete = false;
-          while (Wire.available()){
-              char c = (char)Wire.read();
-              response(cnt) = c;
-              cnt++;
-              if (c == '\n'){
-                  isResponseComplete = true;
-              }
-          }
-          while(cnt < 24){
-             response(cnt) = 0;
-             cnt ++; 
-          }
       }
       if (frontEndInput[0] == 'B'){ //set pin to low
+          byte result = 0;
+          //setup command to slave
+          Wire.beginTransmission(99);
+          Wire.write(frontEndInput, 3);
+          result = Wire.endTransmission();
+          requestCallBack();
         
       }
       if (frontEndInput[0] == 'C'){ //get status of pin
-        
+         Wire.beginTransmission(99);
+          Wire.write(frontEndInput, 3);
+          Wire.endTransmission();
+          requestCallBack();      
       }
       if (frontEndInput[0] == 'D'){ //lock
         
       }
-  }
+           isInputComplete = false;
+
+    }
+    
+    if (isResponseComplete){
+        for (int i = 0; i < 3; i++){
+           Serial.write(response[i]); 
+        }
+        isResponseComplete = false; 
+    }
+ 
 }
 
-void serialEvent(int var){
-   byte cnt = 0;
-   while (Serial.available() && cnt < 3){
-      char inChar = (char)Serial.read();
-      frontEndInput[cnt] = inChar;
-      cnt++;
-      if (inChar == '\n'){
-         isInputComplete = true; 
+void serialEvent(){
+   int cnt = 0;
+   while (Serial.available()){
+      if (cnt < 3){
+        char inChar = (char)Serial.read();
+        frontEndInput[cnt] = inChar;
+        cnt++;
+        if (inChar == '\n'){
+           isInputComplete = true;   
+        }
+      } if (cnt == 3){
+         Serial.read(); 
       }
    } 
+}
+
+void requestCallBack(){
+  
+            Wire.requestFrom(99, 3);
+          int cnt = 0;
+         while (Wire.available()){
+            if (cnt < 3){
+              char inChar = Wire.read();
+              response[cnt] = inChar;
+              cnt++;
+            } if (cnt == 3){
+               isResponseComplete = true;
+               Wire.read(); 
+            }
+       } 
 }
