@@ -13,75 +13,112 @@ void setup(){
 void loop(){
   serialEvent();
   if (isInputComplete){
-      if (frontEndInput[0] == 'A'){ //set pin to high
-          byte result = 0;
-          //setup command to slave
-          Wire.beginTransmission(99);
-          Wire.write(frontEndInput, 3);
-          result = Wire.endTransmission();
-          
-          requestCallBack();
-          
-      }
-      if (frontEndInput[0] == 'B'){ //set pin to low
-          byte result = 0;
-          //setup command to slave
-          Wire.beginTransmission(99);
-          Wire.write(frontEndInput, 3);
-          result = Wire.endTransmission();
-          requestCallBack();
-        
-      }
-      if (frontEndInput[0] == 'C'){ //get status of pin
-         Wire.beginTransmission(99);
-          Wire.write(frontEndInput, 3);
-          Wire.endTransmission();
-          requestCallBack();      
-      }
-      if (frontEndInput[0] == 'D'){ //lock
-        
-      }
-           isInputComplete = false;
+    if (frontEndInput[0] == 'A'){ //set pin to high
+		if(writeToSlave(99, frontEndInput, 3) == 0){
+			requestCallBack(99, response, 3);
+		} else {
+
+		}
+    }
+    if (frontEndInput[0] == 'B'){ //set pin to low
+		if(writeToSlave(99, frontEndInput, 3) == 0){
+			requestCallBack(99, response, 3);
+		} else {
+			//in error
+		}
+    }
+    if (frontEndInput[0] == 'C'){ //get status of pin
+		if(writeToSlave(99, frontEndInput, 3) == 0){
+			requestCallBack(99, response, 3);
+		} else {
+			//in error
+		} 
+    }
+    if (frontEndInput[0] == 'D'){ //lock
 
     }
-    
-    if (isResponseComplete){
-        for (int i = 0; i < 3; i++){
-           Serial.write(response[i]); 
-        }
-        isResponseComplete = false; 
-    }
- 
+    isInputComplete = false;
+  }
+
+  if (isResponseComplete){
+	writeToSerial(reponse, 3);
+    isResponseComplete = false; 
+  }
+
 }
 
 void serialEvent(){
-   int cnt = 0;
-   while (Serial.available()){
-      if (cnt < 3){
-        char inChar = (char)Serial.read();
-        frontEndInput[cnt] = inChar;
-        cnt++;
-        if (inChar == '\n'){
-           isInputComplete = true;   
-        }
-      } if (cnt == 3){
-         Serial.read(); 
+  int cnt = 0;
+  while (Serial.available()){
+    if (cnt < 3){
+      char inChar = (char)Serial.read();
+      frontEndInput[cnt] = inChar;
+      cnt++;
+      if (inChar == '\n'){
+        isInputComplete = true;   
       }
-   } 
+    } 
+    if (cnt == 3){
+      Serial.read(); 
+    }
+  } 
 }
 
-void requestCallBack(){
-  
-            Wire.requestFrom(99, 3);
-          int cnt = 0;
-         while (Wire.available()){
-            if (cnt < 3){
-              char inChar = Wire.read();
-              response[cnt] = inChar;
-              cnt++;
-            } if (cnt == 3){
-               isResponseComplete = true;
-               Wire.read(); 
-            }
-       } 
+void readCharArrayFromSerial(byte* buffer, byte length){
+	readArrayFromSerial(buffer, length, true);
+}
+
+void readByteArrayFromSerial(byte* buffer, byte length){
+	readArrayFromSerial(buffer, length, false);
+}
+
+void readArrayFromSerial(byte* buffer, byte length, boolean isNullTerminated){
+	int cnt = 0;
+	while (Serial.available()){
+		if (cnt < length){
+			char temp = (char)Serial.read();
+			frontEndInput[cnt] = temp;
+			cnt++
+			if (isNullTerminated && temp == '\n'){
+				isInputComplete = true;
+			}
+		}
+		if (cnt == length){
+			Serial.read();
+		}
+	}
+}	
+
+void requestCallBack(byte address, byte* buffer, byte length){
+  Wire.requestFrom(address, length);
+  int cnt = 0;
+  while (Wire.available()){
+    if (cnt < length){
+      char inChar = Wire.read();
+      buffer[cnt] = inChar;
+      cnt++;
+    } 
+    if (cnt == length){
+      isResponseComplete = true;
+      Wire.read(); 
+    }
+  } 
+}
+
+byte writeToSlave(byte address, byte* message, byte length){
+	Wire.beginTransmission(address);
+	Wire.write(message, length);
+	return Wire.endTransmission
+}
+
+void writeToSerial(byte* message, byte length){
+	for (byte i = 0; i < length; i++){
+		Serial.write(message[i]);
+	}
+}
+
+void writeToSerial(String str){
+	for (byte i = 0; i < str.length(); i++){
+		Serial.write(str.charAt(i));
+	}
 }
