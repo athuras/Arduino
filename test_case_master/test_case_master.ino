@@ -35,13 +35,18 @@ void loop(){
 		} 
     }
     if (frontEndInput[0] == 'D'){ //lock
+         if (writeToSlave(99, frontEndInput, 3) == 0){
+            requestCallBack(99, response, 3); 
+         } else {
+           
+         }
 
     }
     isInputComplete = false;
   }
 
   if (isResponseComplete){
-	writeToSerial(reponse, 3);
+	writeToSerial(response, 3);
     isResponseComplete = false; 
   }
 
@@ -49,6 +54,7 @@ void loop(){
 
 void serialEvent(){
   int cnt = 0;
+  //readByteArrayFromSerial(frontEndInput, 3);
   while (Serial.available()){
     if (cnt < 3){
       char inChar = (char)Serial.read();
@@ -78,8 +84,8 @@ void readArrayFromSerial(byte* buffer, byte length, boolean isNullTerminated){
 		if (cnt < length){
 			char temp = (char)Serial.read();
 			frontEndInput[cnt] = temp;
-			cnt++
-			if (isNullTerminated && temp == '\n'){
+			cnt++;
+			if (isNullTerminated && (char)temp == '\n'){
 				isInputComplete = true;
 			}
 		}
@@ -108,7 +114,7 @@ void requestCallBack(byte address, byte* buffer, byte length){
 byte writeToSlave(byte address, byte* message, byte length){
 	Wire.beginTransmission(address);
 	Wire.write(message, length);
-	return Wire.endTransmission
+	return Wire.endTransmission();
 }
 
 void writeToSerial(byte* message, byte length){

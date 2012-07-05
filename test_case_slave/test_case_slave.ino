@@ -5,6 +5,10 @@ boolean isInputComplete = false;
 String output;
 int readValue;
 
+boolean lockCycleOn = false;
+unsigned long lockCycleStartTime;
+byte lockedAddress = 0;
+
 void setup(){
   Wire.begin(99); 
   Wire.onReceive(receiveEvent);
@@ -14,27 +18,54 @@ void setup(){
 }
 
 void loop(){
-  if (isInputComplete){
+  if (isInputComplete && !lockCycleOn){
+    byte c = parseAddress((byte*)input);
     if (input[0] == 'A'){
-      if (input[1] == '3'){
-        digitalWrite(13, HIGH); 
-      }
+      pinMode(c, OUTPUT);
+      digitalWrite(c, HIGH);
     } 
     if (input[0] == 'B'){
-      if (input[1] == '3'){
-        digitalWrite(13, LOW);
-      } 
+      pinMode(c, OUTPUT);
+      digitalWrite(c, LOW);
     }
     if (input[0] == 'C'){
-      //need to read status of pin
-      //dummied to pin 5 for now
-      pinMode(5, INPUT);
-      readValue = digitalRead(5);
+      pinMode(c, INPUT);
+      readValue = digitalRead(c);
     }
+    if (input[0] == 'D'){
+      pinMode(c, OUTPUT);
+      digitalWrite(c, HIGH);
+      lockCycleOn = true;  
+      lockCycleStartTime = millis();   
+      lockedAddress = c;
+    }
+  }
+  if (lockCycleOn && millis() - lockCycleStartTime >= 5000){
+     digitalWrite(lockedAddress, LOW);
+     lockCycleOn = false;
+     lockCycleStartTime = 0;
   }
   isInputComplete = false;
   delay(100);
 }
+
+byte parseAddress(byte* buffer){
+  /*
+  //for two digit addresses, enable later
+  byte temp = 0;
+  if (buffer[1] >=48 && buffer[1] <= 57){
+    temp += (buffer[1] - 48)*10;
+  }
+  if (buffer[2] >=48 && buffer[2] <= 57){
+    temp += (buffer[2]-48);
+  }
+  return temp;
+  */
+  if (buffer[1] >=48 && buffer[1] <= 57){
+     return (buffer[1] - 48); 
+  }
+}
+
 
 void receiveEvent(int howMany){
   int cnt = 0;
@@ -54,19 +85,38 @@ void receiveEvent(int howMany){
 }
 
 void requestEvent(){
-  if (input[0] == 'A'){
-    Wire.write("AAA"); 
-  } 
-  if (input[0] == 'B'){
-    Wire.write("BBB");
-  } 
-  if (input[0] == 'C'){
-    if (readValue == 0){
-      Wire.write("C00");
+  if (lockCycleOn){
+    Wire.write("XXX");
+  } else {
+    if (input[0] == 'A'){
+      Wire.write("AAA"); 
     } 
-    else if (readValue == 1){
-      Wire.write("C11");
+    if (input[0] == 'B'){
+      Wire.write("BBB");
     } 
+    if (input[0] == 'C'){
+      if (readValue == 0){
+        Wire.write("C00");
+      } 
+      else if (readValue == 1){
+        Wire.write("C11");
+      } 
+    }
+    if (input[0] == 'D'){
+       Wire.write("DDD"); 
+    }
   }
+  
+
+}
+
+void writeToWire(String str){
+  for (byte i = 0; i < str.length(); i++){
+     Wire.write(str.charAt(i)); 
+  }
+}
+
+void writeToWire(byte* buffer, byte length){
+  
 }
 
