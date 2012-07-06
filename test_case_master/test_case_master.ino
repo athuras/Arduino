@@ -52,6 +52,7 @@ void loop(){
 
 }
 
+//called at start of loops to inspect the serial line
 void serialEvent(){
   int cnt = 0;
   //readByteArrayFromSerial(frontEndInput, 3);
@@ -70,14 +71,19 @@ void serialEvent(){
   } 
 }
 
+//helper function to read null terminated character arrays 
+//null terminator is included in the length
 void readCharArrayFromSerial(byte* buffer, byte length){
 	readArrayFromSerial(buffer, length, true);
 }
 
+//helper function to read byte array of length length
 void readByteArrayFromSerial(byte* buffer, byte length){
 	readArrayFromSerial(buffer, length, false);
 }
 
+//reads request length from serial into specified 8bit array
+//after requested length is read, continues to read off the line until Serial is empty
 void readArrayFromSerial(byte* buffer, byte length, boolean isNullTerminated){
 	int cnt = 0;
 	while (Serial.available()){
@@ -95,6 +101,7 @@ void readArrayFromSerial(byte* buffer, byte length, boolean isNullTerminated){
 	}
 }	
 
+//helper function to request response from slave
 void requestCallBack(byte address, byte* buffer, byte length){
   Wire.requestFrom(address, length);
   int cnt = 0;

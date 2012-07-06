@@ -40,13 +40,20 @@ void loop(){
       lockedAddress = c;
     }
   }
-  if (lockCycleOn && millis() - lockCycleStartTime >= 5000){
+  checkLockCycle();
+  isInputComplete = false;
+  delay(100);
+}
+
+//called every loop to check the line lock caused by unlocking a locker
+//dummied out to lock for a time interval
+//in read implementation, would check for the limit switch of the opened lock
+void checkLockCycle(){
+   if (lockCycleOn && millis() - lockCycleStartTime >= 5000){
      digitalWrite(lockedAddress, LOW);
      lockCycleOn = false;
      lockCycleStartTime = 0;
   }
-  isInputComplete = false;
-  delay(100);
 }
 
 byte parseAddress(byte* buffer){
