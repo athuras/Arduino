@@ -55,8 +55,8 @@ void loop(){
 //called at start of loops to inspect the serial line
 void serialEvent(){
   int cnt = 0;
-  //readByteArrayFromSerial(frontEndInput, 3);
-  while (Serial.available()){
+  readByteArrayFromSerial(frontEndInput, 3);
+  /*while (Serial.available()){
     if (cnt < 3){
       char inChar = (char)Serial.read();
       frontEndInput[cnt] = inChar;
@@ -68,7 +68,7 @@ void serialEvent(){
     if (cnt == 3){
       Serial.read(); 
     }
-  } 
+  } */
 }
 
 //helper function to read null terminated character arrays 
@@ -89,13 +89,14 @@ void readArrayFromSerial(byte* buffer, byte length, boolean isNullTerminated){
 	while (Serial.available()){
 		if (cnt < length){
 			char temp = (char)Serial.read();
-			frontEndInput[cnt] = temp;
+			buffer[cnt] = temp;
 			cnt++;
 			if (isNullTerminated && (char)temp == '\n'){
 				isInputComplete = true;
 			}
 		}
 		if (cnt == length){
+			isInputComplete = true;
 			Serial.read();
 		}
 	}

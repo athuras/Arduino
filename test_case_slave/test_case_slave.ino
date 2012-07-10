@@ -1,13 +1,14 @@
 #include <Wire.h>
 
 char input[3];
-boolean isInputComplete = false;
+bool isInputComplete = false;
 String output;
 int readValue;
 
-boolean lockCycleOn = false;
+bool lockCycleOn = false;
 unsigned long lockCycleStartTime;
 byte lockedAddress = 0;
+bool ledon = false;
 
 void setup(){
   Wire.begin(99); 
@@ -43,6 +44,26 @@ void loop(){
   checkLockCycle();
   isInputComplete = false;
   delay(100);
+}
+
+void toggleLED(){
+   if (ledon){
+      digitalWrite(13, LOW);
+      ledon = false;
+   } else {
+      digitalWrite(13, HIGH);
+      ledon = true;     
+   }
+}
+
+bool getValue(byte address){
+   pinMode(address, INPUT);
+   int value = digitalRead(address);
+   if (value == HIGH){
+      return true;
+   } if (value == LOW){
+      return false; 
+   }
 }
 
 //called every loop to check the line lock caused by unlocking a locker
@@ -102,11 +123,13 @@ void requestEvent(){
       Wire.write("BBB");
     } 
     if (input[0] == 'C'){
-      if (readValue == 0){
-        Wire.write("C00");
-      } 
-      else if (readValue == 1){
+      boolean val = getValue(parseAddress((byte*)input));
+      toggleLED();
+      if (val){
         Wire.write("C11");
+      } 
+      else{
+        Wire.write("C00");
       } 
     }
     if (input[0] == 'D'){
