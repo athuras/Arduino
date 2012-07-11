@@ -28,7 +28,6 @@ PROGMEM const char *string_table[] = 	   // change "string_table" name to suit
 
 const byte DEFAULT_ADDRESS = 99;
 byte current_address = 99;
-boolean inDefaultState = true;
 const int COMMAND_LENGTH = 12;
 Message received_command = Message();
 
@@ -51,28 +50,26 @@ void receiveEvent(int value){
      cnt++;
   }
   received_command.deserialize(buffer, cnt);
-  if (inDefaultState){
+  if (current_address == DEFAULT_ADDRESS){
       //compares the first 7 btyes of the received command with new_address command
       //if they match, then the 8th btyte [COMMAND_LENGTH-1] holds the new address to be assigned
       if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH - 1)){ 
          resetAddress(received_command.command[COMMAND_LENGTH-1]); 
       }
   } else {
-    if (memcmp(received_command.command, string_table[0], COMMAND_LENGTH)){ //unlock code sent
+    if (memcmp(received_command.command, string_table[0], COMMAND_LENGTH)){ // unlock code sent
         unlock(received_command.cell);
-    } else if (memcmp(received_command.command, string_table[1], COMMAND_LENGTH)){ //queried by master
+    } else if (memcmp(received_command.command, string_table[1], COMMAND_LENGTH)){ // queried by master
         query(received_command.cell);
-    } else if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH-1)){ //this state shouldn't thappen
-      
+    } else if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH-1)){  // this state shouldn't happen 
     }
   }
 }
 
 void resetAddress(byte address){
-  Wire.begin(address);
   current_address = address;
-  inDefaultState = false;
-  
+  Wire.begin(address);
+  return;
 }
 
 void unlock(byte cell){
@@ -89,5 +86,4 @@ void query(byte cell){
   } else {
      //query the state of the specified cell
   }
-  
 }
