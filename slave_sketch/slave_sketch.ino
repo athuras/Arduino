@@ -19,11 +19,11 @@ Needs to perform:
 prog_char unlockcode[] PROGMEM = {49, 49, 49, 49, 49, 49, 49, 49};   // "String 0" etc are strings to store - change to suit.
 prog_char querycode[] PROGMEM = {50, 50, 50, 50, 50, 50, 50, 50};
 prog_char new_addresscode[] PROGMEM =  {51, 51, 51, 51, 51, 51, 51}; 
-const int CONTROL_SIZE = 3;
-const int muxSelectPins[CONTROL_SIZE] = {1,2,3};
-const int sensorIn = 4;
-const int decodeControlPins[CONTROL_SIZE] = {5,6,7};
-const int decodeIn = 8;
+const int CONTROL_SIZE = 4;
+const int muxSelectPins[CONTROL_SIZE] = {1,2,3,4};
+const int MUX_IN = 5;
+const int decodeControlPins[CONTROL_SIZE] = {6,7,8,9};
+const int DEC_IN = 10;
 
 PROGMEM const char *string_table[] = 	   // change "string_table" name to suit
 {   
@@ -41,12 +41,12 @@ void setup(){
   Wire.begin(DEFAULT_ADDRESS);
   Wire.onReceive(receiveEvent);
   Serial.begin(9600);
-  pinMode(sensorIn, INPUT);
-  pinMode(decodeIn, INPUT);
-  for(int i = 0; i < CONTROL_SIZE - 1; i++){
+  pinMode(MUX_IN, INPUT);
+  pinMode(DEC_IN, OUTPUT); // Somewhat ambiguous name, could also be DEC_OUT.
+  for ( int i = 0; i < CONTROL_SIZE - 1; i++){
     pinMode(muxSelectPins[i], OUTPUT);
   }
-  for( int i = 0; i < CONTROL_SIZE -1; i ++){
+  for ( int i = 0; i < CONTROL_SIZE -1; i++){
     pinMode(decodeControlPins[i], OUTPUT);
   }
 }
@@ -78,6 +78,43 @@ void receiveEvent(int value){
     } else if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH-1)){  // this state shouldn't happen 
     }
   }
+}
+
+// One-based. i.e. muxSelect( 1 ) selects the first (zeroith) mux in.
+void muxSelect(int id){ 
+ int aux = id - 1;
+ for ( int k = CONTROL_SIZE - 1; k >= 0; k--){
+    int a = aux % (int) pow(2,k);
+    if ( a == aux ){
+      digitalWrite(muxSelectPins[k], LOW);
+    }
+    else {
+      digitalWrite(muxSelectPins[k], HIGH);
+      aux = aux - a;
+    }
+ }
+ return;
+}
+// Again, one-based. decSelect(1) selects the first (zeroith) dec out.
+void decSelect(int id){
+  int aux = id - 1;
+  for ( int k = CONTROL_SIZE -1; k >=0; k--){
+    int a = aux % (int) pow(2,k);
+    if ( a == aux ){
+      digitalWrite(decodeControlPins[k], LOW);
+    }
+    else {
+      digitalWrite(decodeControlPins[k], HIGH);
+      aux = aux - a;
+    }
+  }
+  return;
+}
+
+void unisonSelect(int id){
+  decSelect(id);
+  muxSelect(id);
+  return;
 }
 
 void resetAddress(byte address){
