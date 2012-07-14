@@ -1,5 +1,4 @@
 // This is the slave microcontroller sketch
-
 /*
 Needs to know:
   List of Cells
@@ -18,8 +17,13 @@ Needs to perform:
 
 //set up commands into flash memory
 prog_char unlockcode[] PROGMEM = {49, 49, 49, 49, 49, 49, 49, 49};   // "String 0" etc are strings to store - change to suit.
-prog_char querycode[] PROGMEM =   {50, 50, 50, 50, 50, 50, 50, 50};
-prog_char new_addresscode[] PROGMEM =   {51, 51, 51, 51, 51, 51, 51} ; 
+prog_char querycode[] PROGMEM = {50, 50, 50, 50, 50, 50, 50, 50};
+prog_char new_addresscode[] PROGMEM =  {51, 51, 51, 51, 51, 51, 51}; 
+const int CONTROL_SIZE = 3;
+const int muxSelectPins[CONTROL_SIZE] = {1,2,3};
+const int sensorIn = 4;
+const int decodeControlPins[CONTROL_SIZE] = {5,6,7};
+const int decodeIn = 8;
 
 PROGMEM const char *string_table[] = 	   // change "string_table" name to suit
 {   
@@ -31,10 +35,20 @@ byte current_address = 99;
 const int COMMAND_LENGTH = 12;
 Message received_command = Message();
 
+
+
 void setup(){
   Wire.begin(DEFAULT_ADDRESS);
   Wire.onReceive(receiveEvent);
   Serial.begin(9600);
+  pinMode(sensorIn, INPUT);
+  pinMode(decodeIn, INPUT);
+  for(int i = 0; i < CONTROL_SIZE - 1; i++){
+    pinMode(muxSelectPins[i], OUTPUT);
+  }
+  for( int i = 0; i < CONTROL_SIZE -1; i ++){
+    pinMode(decodeControlPins[i], OUTPUT);
+  }
 }
 
 void loop(){
