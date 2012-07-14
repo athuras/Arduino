@@ -19,11 +19,12 @@ Needs to perform:
 prog_char unlockcode[] PROGMEM = {49, 49, 49, 49, 49, 49, 49, 49};   // "String 0" etc are strings to store - change to suit.
 prog_char querycode[] PROGMEM = {50, 50, 50, 50, 50, 50, 50, 50};
 prog_char new_addresscode[] PROGMEM =  {51, 51, 51, 51, 51, 51, 51}; 
+// Pins are arbitrary, and should be changed depending on the requirements.
 const int CONTROL_SIZE = 4;
-const int muxSelectPins[CONTROL_SIZE] = {1,2,3,4};
+const int DEC_OUT = 10;
 const int MUX_IN = 5;
+const int muxSelectPins[CONTROL_SIZE] = {1,2,3,4};
 const int decodeControlPins[CONTROL_SIZE] = {6,7,8,9};
-const int DEC_IN = 10;
 
 PROGMEM const char *string_table[] = 	   // change "string_table" name to suit
 {   
@@ -35,14 +36,12 @@ byte current_address = 99;
 const int COMMAND_LENGTH = 12;
 Message received_command = Message();
 
-
-
 void setup(){
   Wire.begin(DEFAULT_ADDRESS);
   Wire.onReceive(receiveEvent);
   Serial.begin(9600);
   pinMode(MUX_IN, INPUT);
-  pinMode(DEC_IN, OUTPUT); // Somewhat ambiguous name, could also be DEC_OUT.
+  pinMode(DEC_OUT, OUTPUT);
   for ( int i = 0; i < CONTROL_SIZE - 1; i++){
     pinMode(muxSelectPins[i], OUTPUT);
   }
@@ -111,9 +110,11 @@ void decSelect(int id){
   return;
 }
 
-void unisonSelect(int id){
-  decSelect(id);
-  muxSelect(id);
+// To avoid embarrasing mass unlock scenarios, pulse timing should be tuned to relay.
+void pulse(int pin){
+  digitalWrite(pin, HIGH);
+  delay(100);
+  digitalWrite(pin, LOW);
   return;
 }
 
@@ -127,14 +128,17 @@ void unlock(byte cell){
     if (cell == 0){
        //this is an error state 
     } else {
-      //unlock cell
+      decSelect( (int) cell );
+      pulse(DEC_OUT);
     }
+    return;
 }
 
 void query(byte cell){
   if (cell == 0){
-     //query the state of the column 
+     // return the number of consecutaive cells to master. master should then sequentially query each cell.
   } else {
-     //query the state of the specified cell
+    muxSelect( (int) cell );
+    // read value of MUX_IN
   }
 }
