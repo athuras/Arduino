@@ -42,7 +42,7 @@ void loop(){
 	if (inLockCycle){
 		Message msg = Message(lockedColumn, lockedCell, string_table[3]);
 		if (writeToSlave(msg) == 0){
-			requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
+			requestCallBack(lockedColumn, fromSlaveBuffer, slaveResponseLength);
 		}
 		/*
 		Pseudo-code
@@ -54,48 +54,53 @@ void loop(){
 			inLockCycle = false; //to leave
 		*/
 	}
-	if (isInputComplete && !inlockCycle){
+	if (isInputComplete && !inLockCycle){
 		byte col = charNumToByteNum((char)fromFrontBuffer[0]);
 		byte cell = charNumToByteNum((char)fromFrontBuffer[1]);
 		byte command = parseFrontEndCommand(fromFrontBuffer); //wrap this into an enum
+		byte response = 0;
 		if (command == 0){ //unlock
 			Message msg = Message(col, cell, string_table[0]);  
-			if (writeToSlave(msg) == 0){
+			response = writeToSlave(msg);
+			if (response){
 				requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
 				inLockCycle = true;
 				lockedColumn = col;
 				lockedCell = cell;
 			} else {
-			  
+				printError(msg, response);
 			}
 		}
 		if (command == 1){ //query analog sensor
 			Message msg = Message(col, cell, string_table[1]); 
-			if (writeToSlave(msg) == 0){
+			response = writeToSlave(msg);
+			if (response){
 				requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
 			} else {
-		  
+				printError(msg, response);
 			}
 		}
 		if (command == 2){ //query limit switch
 			Message msg = Message(col, cell, string_table[3]); 
-			if (writeToSlave(msg) == 0){
+			response = writeToSlave(msg);
+			if (response == 0){
 				requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
 			
 			} else {
-		  
+				printError(msg, response);
 			}      
 		}
 		if (command == 3){ //query all limit switches
 			Message msg = Message(col, 0, string_table[3]); 
-			if (writeToSlave(msg) == 0){
+			response = writeToSlave(msg);
+			if (response == 0){
 				requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
 			} else {
-		  
+				printError(msg, response);
 			}      
 		}
 	//examines the default address location
-   } else if (!inputComplete && !inLockCycle){
+   } else if (!isInputComplete && !inLockCycle){
 		//sends a dummy query
 		Message msg = Message(defaultAddress, 0, string_table[0]);
 		if (writeToSlave(msg) == 0){
@@ -205,4 +210,16 @@ byte parseFrontEndCommand(byte* command){
 	if ((char)command[2] == 'D'){
 		return 3;
 	}
+}
+
+void printError(Message msg, byte response){
+	Serial.print("Error: ");
+	Serial.print("Col: ");
+	Serial.print(msg.col);
+	Serial.print("Cell: ");
+	Serial.print(msg.cell);
+	Serial.print("Cmd: ");
+	Serial.print(msg.command);
+	Serial.print("Rsp: ");
+	Serial.println(response);
 }
