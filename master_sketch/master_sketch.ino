@@ -25,8 +25,29 @@ void loop(){
    if (isInputComplete){
       byte col = charNumToByteNum((char)buffer[0]);
       byte address = charNumToByteNum((char)buffer[1]);
-       
+      
+      if ((char)buffer[2] == 'A'){ //unlock
+          Message msg = Message(col, address, string_table[0]);  
+      }
+      if ((char)buffer[2] == 'B'){ //query analog sensor
+          Message msg = Message(col, address, string_table[1]); 
+      }
+      if ((char)buffer[2] == 'C'){ //query limit switch
+          Message msg = Message(col, address, string_table[3]); 
+      }
+      if ((char)buffer[2] == 'D'){ //query all limit switches
+          Message msg = Message(col, 0, string_table[3]); 
+      }      
    }
+}
+
+void writeToSlave(Message msg){
+  int length = 10; //this is dummied
+  char writeBuffer[10];
+  msg.serialize(writeBuffer, 10);
+  	Wire.beginTransmission(msg.col);
+	Wire.write(writeBuffer, length);
+	return Wire.endTransmission();
 }
 
 byte charNumToByteNum(char c){

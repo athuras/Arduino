@@ -6,9 +6,11 @@ struct Message{
 	//constructor
 	Message();
 	Message(char col, char cell, char* command);
+	Message(char col, char cell, const char* command);
+
 	
 	//serialize to string for Wire.write(char[]);
-	void serialize(char* array, int &size);
+	void serialize(char array[], int size);
 	char* serialize();
 	void deserialize(char* array, int size);
 	void empty();

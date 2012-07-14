@@ -17,7 +17,13 @@ Message::Message(char col, char cell, char* command)
 	memcpy(this->command, command, COMMAND_LENGTH);
 }
 
-void Message::serialize(char* output_array, int &size){
+Message::Message(char col, char cell, const char* command){
+	this-> col = col;
+	this-> cell = cell;
+	memcpy(this->command, command, COMMAND_LENGTH);
+}
+
+void Message::serialize(char output_array[], int size){
 	
 }
 
