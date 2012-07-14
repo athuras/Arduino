@@ -18,13 +18,16 @@ bool isSlaveResponseComplete = false;
 byte toSlaveBuffer[10];
 byte toFrontBuffer[10];
 byte fromSlaveBuffer[10];
-byte fromFrontBuffer[10];
-byte slaveResponseLength = 10;
+byte fromFrontBuffer[16];
+byte slaveResponseLength = 16;
 
 bool inLockCycle = false;
 int lockDelay = 100;
 byte lockedColumn = 0;
 byte lockedCell = 0;
+
+bool newColumnFound = false;
+byte defaultAddress = 99; //pull this out later
 
 void setup(){
   Serial.begin(9600);
@@ -33,6 +36,9 @@ void setup(){
 
 void loop(){
 	serialEvent();
+	if (newColumnFound){
+		
+	}
 	if (inLockCycle){
 		Message msg = Message(lockedColumn, lockedCell, string_table[3]);
 		if (writeToSlave(msg) == 0){
@@ -87,7 +93,23 @@ void loop(){
 			} else {
 		  
 			}      
-		}      
+		}
+	//examines the default address location
+   } else if (!inputComplete && !inLockCycle){
+		//sends a dummy query
+		Message msg = Message(defaultAddress, 0, string_table[0]);
+		if (writeToSlave(msg) == 0){
+			newColumnFound = true;
+			requestCallBack(defaultAddress, fromSlaveBuffer, slaveResponseLength);
+			
+			//need to query front end for free address
+			//request response with long enough length
+			//the response will contact locker information
+			//send that locker information upstream to front-end
+		} else {
+			//this is the usual case: no new device
+			//no action required
+		}
    }
    delay(100);
 }
