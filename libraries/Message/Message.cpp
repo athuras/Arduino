@@ -24,7 +24,15 @@ Message::Message(char col, char cell, const char* command){
 }
 
 void Message::serialize(char output_array[], int size){
-	
+	if (size == OUTPUT_LENGTH){
+		output_array[0] = this->col;
+		output_array[1] = this->cell;
+		memcpy((void*) output_array[2], (void*) this->command, COMMAND_LENGTH);
+	} else if (size > OUTPUT_LENGTH){
+	//add in later?
+	} else {
+	//error
+	}
 }
 
 char* Message::serialize(){
