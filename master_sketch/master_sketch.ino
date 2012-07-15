@@ -32,6 +32,9 @@ byte defaultAddress = 99; //pull this out later
 void setup(){
   Serial.begin(9600);
   Wire.begin();
+  newColumnFound = false;
+  inLockCycle = false;
+  isInputComplete = false;
 }
 
 void loop(){
@@ -55,6 +58,7 @@ void loop(){
 		*/
 	}
 	if (isInputComplete && !inLockCycle){
+		Serial.println("in isInputComplete loop");
 		byte col = charNumToByteNum((char)fromFrontBuffer[0]);
 		byte cell = charNumToByteNum((char)fromFrontBuffer[1]);
 		byte command = parseFrontEndCommand(fromFrontBuffer); //wrap this into an enum
@@ -62,19 +66,25 @@ void loop(){
 		if (command == 0){ //unlock
 			Message msg = Message(col, cell, string_table[0]);  
 			response = writeToSlave(msg);
-			if (response){
+			Serial.print("Received unlock, col: ");
+			Serial.print(col);
+			Serial.print("address: ");
+			Serial.println(cell);
+			if (response == 0){
+				Serial.println("in send loop");
 				requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
 				inLockCycle = true;
 				lockedColumn = col;
 				lockedCell = cell;
 			} else {
-				printError(msg, response);
+				Serial.println("error");
+				//printError(msg, response);
 			}
 		}
 		if (command == 1){ //query analog sensor
 			Message msg = Message(col, cell, string_table[1]); 
 			response = writeToSlave(msg);
-			if (response){
+			if (response == 0){
 				requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
 			} else {
 				printError(msg, response);
@@ -99,8 +109,9 @@ void loop(){
 				printError(msg, response);
 			}      
 		}
+		isInputComplete = false;
 	//examines the default address location
-   } else if (!isInputComplete && !inLockCycle){
+   } /*else if (!isInputComplete && !inLockCycle){
 		//sends a dummy query
 		Message msg = Message(defaultAddress, 0, string_table[0]);
 		if (writeToSlave(msg) == 0){
@@ -115,7 +126,7 @@ void loop(){
 			//this is the usual case: no new device
 			//no action required
 		}
-   }
+   }*/
    delay(100);
 }
 
@@ -169,6 +180,9 @@ void readByteArrayFromSerial(byte* buffer, byte length){
 //after requested length is read, continues to read off the line until Serial is empty
 void readArrayFromSerial(byte* buffer, byte length, boolean isNullTerminated){
 	int cnt = 0;
+	if (Serial.available()){
+		Serial.println("reading from serial");
+	}
 	while (Serial.available()){
 		if (cnt < length){
 			char temp = (char)Serial.read();
