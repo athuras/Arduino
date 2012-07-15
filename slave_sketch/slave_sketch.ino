@@ -19,12 +19,15 @@ Needs to perform:
 prog_char unlockcode[] PROGMEM = {49, 49, 49, 49, 49, 49, 49, 49};   // "String 0" etc are strings to store - change to suit.
 prog_char querycode[] PROGMEM = {50, 50, 50, 50, 50, 50, 50, 50};
 prog_char new_addresscode[] PROGMEM =  {51, 51, 51, 51, 51, 51, 51}; 
+
 // Pins are arbitrary, and should be changed depending on the requirements.
 const int CONTROL_SIZE = 4;
 const int DEC_OUT = 10;
-const int MUX_IN = 5;
+const int MUX_IN = 5; // must be analog in
 const int muxSelectPins[CONTROL_SIZE] = {1,2,3,4};
 const int decodeControlPins[CONTROL_SIZE] = {6,7,8,9};
+
+const int PULSE_DELAY = 100; // in ms
 
 PROGMEM const char *string_table[] = 	   // change "string_table" name to suit
 {   
@@ -113,7 +116,7 @@ void decSelect(int id){
 // To avoid embarrasing mass unlock scenarios, pulse timing should be tuned to relay.
 void pulse(int pin){
   digitalWrite(pin, HIGH);
-  delay(100);
+  delay(PULSE_DELAY);
   digitalWrite(pin, LOW);
   return;
 }
@@ -125,13 +128,13 @@ void resetAddress(byte address){
 }
 
 void unlock(byte cell){
-    if (cell == 0){
+  if (cell == 0){
        //this is an error state 
-    } else {
-      decSelect( (int) cell );
-      pulse(DEC_OUT);
-    }
-    return;
+  } else {
+    decSelect( (int) cell );
+    pulse(DEC_OUT);
+  }
+  return;
 }
 
 void query(byte cell){
