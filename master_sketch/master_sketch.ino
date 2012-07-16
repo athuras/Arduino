@@ -44,7 +44,8 @@ void loop(){
 	}
 	if (inLockCycle){
 		Message msg = Message(lockedColumn, lockedCell, string_table[3]);
-		if (writeToSlave(msg) == 0){
+		byte response = writeToSlave(msg);
+		if (response == 0){
 			requestCallBack(lockedColumn, fromSlaveBuffer, slaveResponseLength);
 		}
 		/*
@@ -111,7 +112,7 @@ void loop(){
 		}
 		isInputComplete = false;
 	//examines the default address location
-   } /*else if (!isInputComplete && !inLockCycle){
+   } else if (!isInputComplete && !inLockCycle){
 		//sends a dummy query
 		Message msg = Message(defaultAddress, 0, string_table[0]);
 		if (writeToSlave(msg) == 0){
@@ -126,7 +127,7 @@ void loop(){
 			//this is the usual case: no new device
 			//no action required
 		}
-   }*/
+   }
    delay(100);
 }
 
