@@ -18,7 +18,8 @@ Needs to perform:
 //set up commands into flash memory
 prog_char unlockcode[] PROGMEM = {49, 49, 49, 49, 49, 49, 49, 49};   // "String 0" etc are strings to store - change to suit.
 prog_char querycode[] PROGMEM = {50, 50, 50, 50, 50, 50, 50, 50};
-prog_char new_addresscode[] PROGMEM =  {51, 51, 51, 51, 51, 51, 51}; 
+prog_char new_addresscode[] PROGMEM = {51, 51, 51, 51, 51, 51, 51}; 
+prog_char limitswitchcode[] PROGMEM = {52, 52, 52, 52, 52, 52, 52};
 
 // Pins are arbitrary, and should be changed depending on the requirements.
 const int CONTROL_SIZE = 4;
