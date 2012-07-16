@@ -145,13 +145,15 @@ void unlock(byte cell){
 Message query(byte cell){
  int reading = LOW;
   if (cell == 0){
-    return Message((char) current_address, 0, CELL_COUNT);
+    int proxy_cell_count[] = {CELL_COUNT, 0,0,0,0,0,0,0};
+    return Message((char) current_address, 0, proxy_cell_count);
      // return the number of consecutaive cells to master. master should then sequentially query each cell.
   } else {
     char type = CELL_TYPES[cell - 1];
     muxSelect( (int) cell );
-    status = digitalRead(MUX_IN);
-    return Message((char) current_address,(char) cell, [type,status,0,0,0,0,0,0]);
+    reading = digitalRead(MUX_IN);
+    int body[] = {type, reading, 0,0,0,0,0,0}; 
+    return Message((char) current_address,(int) cell, body);
   }
 }
 
