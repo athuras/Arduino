@@ -28,7 +28,7 @@ PROGMEM const char *string_table[] = 	   // change "string_table" name to suit
 };
 
 const byte DEFAULT_ADDRESS = 99;
-byte current_address = 99;
+byte current_address = 9;
 const int COMMAND_LENGTH = 12;
 Message received_command = Message();
 
@@ -44,6 +44,9 @@ void setup(){
   for ( int i = 0; i < CONTROL_SIZE - 2; i++){ // note the decoder has one-fewer control pin
     pinMode(decodeControlPins[i], OUTPUT);
   }
+  Serial.print("Slave: ");
+  Serial.print(current_address);
+  Serial.print("\n");
 }
 
 void loop(){
@@ -59,6 +62,9 @@ void receiveEvent(int value){
      cnt++;
   }
   received_command.deserialize(buffer, cnt);
+  Serial.print("Recieved Message\n");
+  messagePrint(received_command);
+  Serial.println("Response:");
   if (current_address == DEFAULT_ADDRESS){
       //compares the first 7 btyes of the received command with new_address command
       //if they match, then the 8th btyte [COMMAND_LENGTH-1] holds the new address to be assigned
@@ -66,18 +72,32 @@ void receiveEvent(int value){
          resetAddress(received_command.command[COMMAND_LENGTH-1]); 
       }
   } else {
+    Message msg = Message();
     if (memcmp(received_command.command, string_table[0], COMMAND_LENGTH)){ // unlock code sent
         unlock(received_command.cell);
-        reply( query( (int)received_command.cell) ); // returns status of cell opened
+        msg = query( (int)received_command.cell);
+        messagePrint(msg);
+        reply( msg ); // returns status of cell opened
     } else if (memcmp(received_command.command, string_table[1], COMMAND_LENGTH)){ // queried by master
-        
-      reply( query(received_command.cell) );
+        msg = query(received_command.cell);
+        messagePrint(msg);
+        reply( msg );
     } else if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH-1)){  // this state shouldn't happen 
     } else if (memcmp(received_command.command, string_table[3], COMMAND_LENGTH)){  //query limit switch
       // query limit switch status.
-      reply( query( (int)received_command.cell + pow(2,CONTROL_SIZE-1) )); // Toggles the last MUX port to trigger limit switch.
+      msg = query( (int)received_command.cell + pow(2,CONTROL_SIZE-1) );
+      messagePrint(msg);
+      reply(msg); // Toggles the last MUX port to trigger limit switch.
     }
   }
+}
+void messagePrint(Message msg){
+  Serial.print("Message: \n");
+  Serial.print("Col: "); Serial.print(msg.col);
+  Serial.print(" Cell: "); Serial.print(msg.cell);
+  Serial.print(" Command:"); Serial.print(msg.command);
+  Serial.print("\n");
+  return;
 }
 
 // One-based. i.e. muxSelect( 1 ) selects the first (zeroith) mux in.
