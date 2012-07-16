@@ -14,6 +14,8 @@ struct Message{
 	char* serialize();
 	void deserialize(char* array, int size);
 	void empty();
+	int length();
+	int bodyLength();
 	
 	//contents
 	char col;

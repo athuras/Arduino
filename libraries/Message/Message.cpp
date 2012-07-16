@@ -23,6 +23,14 @@ Message::Message(char col, char cell, const char* command){
 	memcpy(this->command, command, COMMAND_LENGTH);
 }
 
+int Message::length(){
+	return OUTPUT_LENGTH;
+}
+
+int Message::bodyLength(){
+	return COMMAND_LENGTH;
+}
+
 void Message::serialize(char output_array[], int size){
 	if (size == OUTPUT_LENGTH){
 		output_array[0] = this->col;
