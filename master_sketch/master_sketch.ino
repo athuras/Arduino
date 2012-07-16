@@ -71,14 +71,21 @@ void loop(){
 	}
 	else {
 		if (isInputComplete){
+			Serial.println("DEBUG: Input complete, now parsing");
 			byte col = charNumToByteNum((char)fromFrontBuffer[0]);
 			byte cell = charNumToByteNum((char)fromFrontBuffer[1]);
 			byte command = parseFrontEndCommand(fromFrontBuffer); //wrap this into an enum
 			byte response = 0;
 			if (command == 0){ //unlock
+				Serial.println("DEBUG: Unlock command recieved, sending");
 				Message msg = Message(col, cell, string_table[0]);  
+				Serial.print("MSG: ");
+				msgDebug(msg);
+				Serial.print('\n');
 				response = writeToSlave(msg);
 				if (response == 0){
+					Serial.print("DEBUG: Response: ");
+					Serial.println(response);
 					requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
 					inLockCycle = true;
 					lockedColumn = col;
@@ -93,9 +100,15 @@ void loop(){
 				}
 			}
 			if (command == 1){ //query analog sensor
+				Serial.println("DEBUG: Analog query cmd recieved, sending");
 				Message msg = Message(col, cell, string_table[1]); 
 				response = writeToSlave(msg);
+				Serial.print("MSG: ");
+				msgDebug(msg);
+				Serial.print('\n');
 				if (response == 0){
+					Serial.print("DEBUG: Response: ");
+					Serial.println(response);
 					requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
 				} else {
 					Serial.print(F("Error analog query: Col: "));
@@ -106,10 +119,16 @@ void loop(){
 					Serial.println(response);
 				}
 			}
-			if (command == 2){ //query limit switch
+			if (command == 2){ //query limit switch							
+				Serial.println("DEBUG: limit query cmd recieved, sending");
 				Message msg = Message(col, cell, string_table[3]); 
 				response = writeToSlave(msg);
+				Serial.print("MSG: ");
+				msgDebug(msg);
+				Serial.print('\n');
 				if (response == 0){
+					Serial.print("DEBUG: Response: ");
+					Serial.println(response);
 					requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
 				} else {
 					Serial.print(F("Error limit switch query: Col: "));
@@ -147,9 +166,7 @@ void loop(){
 				//no action required
 			}
 		}
-	}
-	
-   
+	}	
    delay(10);
 }
 
@@ -268,4 +285,12 @@ void printError(Message msg, byte response){
 	Serial.print(msg.command);
 	Serial.print("Rsp: ");
 	Serial.println(response);
+}
+
+void msgDebug(Message msg){
+	byte buffer[msg.length()];
+	msg.serialize((char*)buffer, msg.length());
+	for (int i = 0; i < msg.length(); i++){
+		Serial.write(buffer[i]);
+	}
 }
