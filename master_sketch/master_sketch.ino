@@ -198,7 +198,16 @@ void readArrayFromSerial(byte* buffer, byte length, boolean isNullTerminated){
 	}
 }	
 
+void limitQueryResponse(Message response){
+	Serial.write(
 
+	byte buffer[response.length()];
+	response.serialize(buffer, response.length());
+	for (int i = 0; i < respose.length(); i++){
+		Serial.write(buffer[i]);
+	}
+	Serial.write('\n');
+}
 
 void writeToFront(byte* message, byte length){
 	for (byte i = 0; i < length; i++){

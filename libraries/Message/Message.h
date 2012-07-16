@@ -7,6 +7,7 @@ struct Message{
 	Message();
 	Message(char col, char cell, char* command);
 	Message(char col, char cell, const char* command);
+	Message(char col, char cell, int* command);
 
 	
 	//serialize to string for Wire.write(char[]);

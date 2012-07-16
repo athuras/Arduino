@@ -23,6 +23,16 @@ Message::Message(char col, char cell, const char* command){
 	memcpy(this->command, command, COMMAND_LENGTH);
 }
 
+Message::Message(char col, char cell, int* command){
+	this->col = col;
+	this->cell = cell;
+	char buffer[COMMAND_LENGTH];
+	for (int i = 0; i < COMMAND_LENGTH; i++){
+		buffer[i] = (char)(command[i]%256);
+	}
+	memcpy(this->command, buffer, COMMAND_LENGTH);
+}
+
 int Message::length(){
 	return OUTPUT_LENGTH;
 }
