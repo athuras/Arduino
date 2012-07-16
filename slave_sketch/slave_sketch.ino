@@ -1,41 +1,30 @@
 // This is the slave microcontroller sketch
-/*
-Needs to know:
-  List of Cells
-  I2C Address
-  Connection/Pin Schema for logic
-  ADC calibration data
-Needs to perform:
-  Respond to Query Command
-    ADC sensor data
-  Respond to Unlock Command
-*/
 
 #include <Wire.h>
 #include <Message.h>
 #include <avr/pgmspace.h>
 
 //set up commands into flash memory
-prog_char unlockcode[] PROGMEM = {49, 49, 49, 49, 49, 49, 49, 49};   // "String 0" etc are strings to store - change to suit.
-prog_char querycode[] PROGMEM = {50, 50, 50, 50, 50, 50, 50, 50};
+prog_char unlockcode[] PROGMEM =      {49, 49, 49, 49, 49, 49, 49, 49};   // "String 0" etc are strings to store - change to suit.
+prog_char querycode[] PROGMEM =       {50, 50, 50, 50, 50, 50, 50, 50};
 prog_char new_addresscode[] PROGMEM = {51, 51, 51, 51, 51, 51, 51}; 
-prog_char limitswitchcode[] PROGMEM = {52, 52, 52, 52, 52, 52, 52};
-prog_char CELL_TYPES[] PROGMEM = {'A', 'B', 'C', 'C', 'B', 'A'}; // the length of this array relates to how many cells there are.
+prog_char limitswitchcode[] PROGMEM = {52, 52, 52, 52, 52, 52, 52, 52};
+prog_char CELL_TYPES[] PROGMEM =      {'A', 'B', 'C', 'C', 'B', 'A'}; // the length of this array relates to how many cells there are.
 
 // Pins are arbitrary, and should be changed depending on the requirements.
 
 const int CELL_COUNT = 0;
-const int CONTROL_SIZE = 4;
+const int CONTROL_SIZE = 4 + 1;
 const int DEC_OUT = 10;
 const int MUX_IN = 5; // must be analog in
-const int muxSelectPins[CONTROL_SIZE] = {1,2,3,4};
-const int decodeControlPins[CONTROL_SIZE] = {6,7,8,9};
+const int muxSelectPins[CONTROL_SIZE] = {1,2,3,4,5}; // the 5th pin is to toggle limit switch
+const int decodeControlPins[CONTROL_SIZE - 1] = {1,2,3,4};
 
 const int PULSE_DELAY = 100; // in ms
 
 PROGMEM const char *string_table[] = 	   // change "string_table" name to suit
 {   
-  unlockcode, querycode, new_addresscode
+  unlockcode, querycode, new_addresscode, limitswitchcode
 };
 
 const byte DEFAULT_ADDRESS = 99;
@@ -79,10 +68,14 @@ void receiveEvent(int value){
   } else {
     if (memcmp(received_command.command, string_table[0], COMMAND_LENGTH)){ // unlock code sent
         unlock(received_command.cell);
+        reply( query( (int)received_command.cell) ); // returns status of cell opened
     } else if (memcmp(received_command.command, string_table[1], COMMAND_LENGTH)){ // queried by master
         
       reply( query(received_command.cell) );
     } else if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH-1)){  // this state shouldn't happen 
+    } else if (memcmp(received_command.command, string_table[3], COMMAND_LENGTH)){  //query limit switch
+      // query limit switch status.
+      reply( query( (int)received_command.cell + pow(2,CONTROL_SIZE-1) )); // Toggles the last MUX port to trigger limit switch.
     }
   }
 }
@@ -120,6 +113,7 @@ void decSelect(int id){
 
 // To avoid embarrasing mass unlock scenarios, pulse timing should be tuned to relay.
 void pulse(int pin){
+  pinMode(pin,OUTPUT);
   digitalWrite(pin, HIGH);
   delay(PULSE_DELAY);
   digitalWrite(pin, LOW);
@@ -137,9 +131,9 @@ void unlock(byte cell){
        //this is an error state 
   } else {
     decSelect( (int) cell );
+    pinMode(DEC_OUT,OUTPUT);
     pulse(DEC_OUT);
   }
-  return;
 }
 
 Message query(byte cell){
@@ -151,6 +145,7 @@ Message query(byte cell){
   } else {
     char type = CELL_TYPES[cell - 1];
     muxSelect( (int) cell );
+    pinMode(MUX_IN, INPUT);
     reading = digitalRead(MUX_IN);
     int body[] = {type, reading, 0,0,0,0,0,0}; 
     return Message((char) current_address,(int) cell, body);
