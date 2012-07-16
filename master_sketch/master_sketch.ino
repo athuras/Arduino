@@ -45,86 +45,110 @@ void loop(){
 	if (inLockCycle){
 		Message msg = Message(lockedColumn, lockedCell, string_table[3]);
 		byte response = writeToSlave(msg);
+		byte limitSwitchStatus = 0;
+		byte analogQuery[msg.COMMAND_LENGTH];
 		if (response == 0){
 			requestCallBack(lockedColumn, fromSlaveBuffer, slaveResponseLength);
+			limitSwitchStatus = fromSlaveBuffer[3];
+			if (limitSwitchStatus = 1){ //lock is closed
+				msg = Message(lockedColumn, lockedCell, string_table[1]);
+				if (writeToSlave(msg) == 0){
+					requstCallBack(lockedColumn, fromSlaveBuffer, slaveResponseLength);
+					memcpy(analogQuery, fromSlaveBuffer[2], msg.COMMAND_LENGTH);
+					//print to serial to tell front end
+					//send both a 'it's closed' signal
+					//and a signal with the analog query
+				} else {
+					//error crap
+				}
+				inLockCycle = false;
+				lockedColumn = 0;
+				lockedCell = 0;
+			} else { //lock is still open
+				//do nothing
+			}
 		}
-		/*
-		Pseudo-code
-		If lock is still open:
-			remain in lockcycle
-		If lock is closed:
-			Query the analog sensor
-			Send result to front-end
-			inLockCycle = false; //to leave
-		*/
 	}
 	else {
-	
-	}
-	if (isInputComplete && !inLockCycle){
-		Serial.println("in isInputComplete loop");
-		byte col = charNumToByteNum((char)fromFrontBuffer[0]);
-		byte cell = charNumToByteNum((char)fromFrontBuffer[1]);
-		byte command = parseFrontEndCommand(fromFrontBuffer); //wrap this into an enum
-		byte response = 0;
-		if (command == 0){ //unlock
-			Message msg = Message(col, cell, string_table[0]);  
-			response = writeToSlave(msg);
-			if (response == 0){
-				requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
-				inLockCycle = true;
-				lockedColumn = col;
-				lockedCell = cell;
-			} else {
-				Serial.println("error");
-				//printError(msg, response);
+		if (isInputComplete){
+			byte col = charNumToByteNum((char)fromFrontBuffer[0]);
+			byte cell = charNumToByteNum((char)fromFrontBuffer[1]);
+			byte command = parseFrontEndCommand(fromFrontBuffer); //wrap this into an enum
+			byte response = 0;
+			if (command == 0){ //unlock
+				Message msg = Message(col, cell, string_table[0]);  
+				response = writeToSlave(msg);
+				if (response == 0){
+					requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
+					inLockCycle = true;
+					lockedColumn = col;
+					lockedCell = cell;
+				} else {
+					Serial.print(F("Error unlocking: Col: "));
+					Serial.print(col);
+					Serial.print(F(" Cell: "));
+					Serial.print(cell);
+					Serial.print(F(" Resp: "));
+					Serial.println(response);
+				}
 			}
-		}
-		if (command == 1){ //query analog sensor
-			Message msg = Message(col, cell, string_table[1]); 
-			response = writeToSlave(msg);
-			if (response == 0){
-				requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
-			} else {
-				printError(msg, response);
+			if (command == 1){ //query analog sensor
+				Message msg = Message(col, cell, string_table[1]); 
+				response = writeToSlave(msg);
+				if (response == 0){
+					requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
+				} else {
+					Serial.print(F("Error analog query: Col: "));
+					Serial.print(col);
+					Serial.print(F(" Cell: "));
+					Serial.print(cell);
+					Serial.print(F(" Resp: "));
+					Serial.println(response);
+				}
 			}
-		}
-		if (command == 2){ //query limit switch
-			Message msg = Message(col, cell, string_table[3]); 
-			response = writeToSlave(msg);
-			if (response == 0){
-				requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
-			} else {
-				printError(msg, response);
-			}      
-		}
-		if (command == 3){ //query all limit switches
-			Message msg = Message(col, 0, string_table[3]); 
-			response = writeToSlave(msg);
-			if (response == 0){
-				requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
-			} else {
-				printError(msg, response);
-			}      
-		}
-		isInputComplete = false;
-	//examines the default address location
-	} else if (!isInputComplete && !inLockCycle){
-		//sends a dummy query
-		Message msg = Message(defaultAddress, 0, string_table[0]);
-		if (writeToSlave(msg) == 0){
-			newColumnFound = true;
-			requestCallBack(defaultAddress, fromSlaveBuffer, slaveResponseLength);
-			
-			//need to query front end for free address
-			//request response with long enough length
-			//the response will contact locker information
-			//send that locker information upstream to front-end
+			if (command == 2){ //query limit switch
+				Message msg = Message(col, cell, string_table[3]); 
+				response = writeToSlave(msg);
+				if (response == 0){
+					requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
+				} else {
+					Serial.print(F("Error limit switch query: Col: "));
+					Serial.print(col);
+					Serial.print(F(" Cell: "));
+					Serial.print(cell);
+					Serial.print(F(" Resp: "));
+					Serial.println(response);	
+				}      
+			}
+			if (command == 3){ //query all limit switches
+				Message msg = Message(col, 0, string_table[3]); 
+				response = writeToSlave(msg);
+				if (response == 0){
+					requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
+				} else {
+					printError(msg, response);
+				}      
+			}
+			isInputComplete = false;
+		//examines the default address location
 		} else {
-			//this is the usual case: no new device
-			//no action required
+			//sends a dummy query
+			Message msg = Message(defaultAddress, 0, string_table[0]);
+			if (writeToSlave(msg) == 0){
+				newColumnFound = true;
+				requestCallBack(defaultAddress, fromSlaveBuffer, slaveResponseLength);
+				
+				//need to query front end for free address
+				//request response with long enough length
+				//the response will contact locker information
+				//send that locker information upstream to front-end
+			} else {
+				//this is the usual case: no new device
+				//no action required
+			}
 		}
 	}
+	
    
    delay(10);
 }
@@ -199,8 +223,6 @@ void readArrayFromSerial(byte* buffer, byte length, boolean isNullTerminated){
 }	
 
 void limitQueryResponse(Message response){
-	Serial.write(
-
 	byte buffer[response.length()];
 	response.serialize(buffer, response.length());
 	for (int i = 0; i < respose.length(); i++){
