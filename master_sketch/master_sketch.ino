@@ -46,15 +46,15 @@ void loop(){
 		Message msg = Message(lockedColumn, lockedCell, string_table[3]);
 		byte response = writeToSlave(msg);
 		byte limitSwitchStatus = 0;
-		byte analogQuery[msg.COMMAND_LENGTH];
+		byte analogQuery[msg.bodyLength()];
 		if (response == 0){
 			requestCallBack(lockedColumn, fromSlaveBuffer, slaveResponseLength);
 			limitSwitchStatus = fromSlaveBuffer[3];
 			if (limitSwitchStatus = 1){ //lock is closed
 				msg = Message(lockedColumn, lockedCell, string_table[1]);
 				if (writeToSlave(msg) == 0){
-					requstCallBack(lockedColumn, fromSlaveBuffer, slaveResponseLength);
-					memcpy(analogQuery, fromSlaveBuffer[2], msg.COMMAND_LENGTH);
+					requestCallBack(lockedColumn, fromSlaveBuffer, slaveResponseLength);
+					memcpy((void*)analogQuery, (void*)fromSlaveBuffer[2], msg.bodyLength());
 					//print to serial to tell front end
 					//send both a 'it's closed' signal
 					//and a signal with the analog query
@@ -224,8 +224,8 @@ void readArrayFromSerial(byte* buffer, byte length, boolean isNullTerminated){
 
 void limitQueryResponse(Message response){
 	byte buffer[response.length()];
-	response.serialize(buffer, response.length());
-	for (int i = 0; i < respose.length(); i++){
+	response.serialize((char*)buffer, response.length());
+	for (int i = 0; i < response.length(); i++){
 		Serial.write(buffer[i]);
 	}
 	Serial.write('\n');
