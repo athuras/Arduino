@@ -20,8 +20,11 @@ prog_char unlockcode[] PROGMEM = {49, 49, 49, 49, 49, 49, 49, 49};   // "String 
 prog_char querycode[] PROGMEM = {50, 50, 50, 50, 50, 50, 50, 50};
 prog_char new_addresscode[] PROGMEM = {51, 51, 51, 51, 51, 51, 51}; 
 prog_char limitswitchcode[] PROGMEM = {52, 52, 52, 52, 52, 52, 52};
+prog_char CELL_TYPES[] PROGMEM = {'A', 'B', 'C', 'C', 'B', 'A'}; // the length of this array relates to how many cells there are.
 
 // Pins are arbitrary, and should be changed depending on the requirements.
+
+const int CELL_COUNT = 0;
 const int CONTROL_SIZE = 4;
 const int DEC_OUT = 10;
 const int MUX_IN = 5; // must be analog in
@@ -77,7 +80,8 @@ void receiveEvent(int value){
     if (memcmp(received_command.command, string_table[0], COMMAND_LENGTH)){ // unlock code sent
         unlock(received_command.cell);
     } else if (memcmp(received_command.command, string_table[1], COMMAND_LENGTH)){ // queried by master
-        query(received_command.cell);
+        
+      reply( query(received_command.cell) );
     } else if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH-1)){  // this state shouldn't happen 
     }
   }
@@ -138,11 +142,24 @@ void unlock(byte cell){
   return;
 }
 
-void query(byte cell){
+Message query(byte cell){
+ int reading = LOW;
   if (cell == 0){
+    return Message((char) current_address, 0, CELL_COUNT);
      // return the number of consecutaive cells to master. master should then sequentially query each cell.
   } else {
+    char type = CELL_TYPES[cell - 1];
     muxSelect( (int) cell );
-    // read value of MUX_IN
+    status = digitalRead(MUX_IN);
+    return Message((char) current_address,(char) cell, [type,status,0,0,0,0,0,0]);
   }
 }
+
+void reply(Message msg){
+  int length = 10; //this is dummied
+  char writeBuffer[length];
+  msg.serialize(writeBuffer, length);
+  Wire.write((byte*)writeBuffer, length);
+  return;
+}
+
