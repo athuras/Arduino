@@ -95,7 +95,7 @@ void messagePrint(Message msg){
   Serial.print("Message: \n");
   Serial.print("Col: "); Serial.print(msg.col);
   Serial.print(" Cell: "); Serial.print(msg.cell);
-  Serial.print(" Command:"); Serial.print(msg.command);
+  Serial.print(" Command: "); Serial.print(msg.command);
   Serial.print("\n");
   return;
 }
