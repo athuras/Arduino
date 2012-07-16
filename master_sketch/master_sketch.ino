@@ -18,8 +18,8 @@ bool isSlaveResponseComplete = false;
 byte toSlaveBuffer[10];
 byte toFrontBuffer[10];
 byte fromSlaveBuffer[10];
-byte fromFrontBuffer[16];
-byte slaveResponseLength = 16;
+byte fromFrontBuffer[10];
+byte slaveResponseLength = 10;
 
 bool inLockCycle = false;
 int lockDelay = 100;
@@ -58,6 +58,9 @@ void loop(){
 			inLockCycle = false; //to leave
 		*/
 	}
+	else {
+	
+	}
 	if (isInputComplete && !inLockCycle){
 		Serial.println("in isInputComplete loop");
 		byte col = charNumToByteNum((char)fromFrontBuffer[0]);
@@ -67,12 +70,7 @@ void loop(){
 		if (command == 0){ //unlock
 			Message msg = Message(col, cell, string_table[0]);  
 			response = writeToSlave(msg);
-			Serial.print("Received unlock, col: ");
-			Serial.print(col);
-			Serial.print("address: ");
-			Serial.println(cell);
 			if (response == 0){
-				Serial.println("in send loop");
 				requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
 				inLockCycle = true;
 				lockedColumn = col;
@@ -96,7 +94,6 @@ void loop(){
 			response = writeToSlave(msg);
 			if (response == 0){
 				requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
-			
 			} else {
 				printError(msg, response);
 			}      
@@ -112,7 +109,7 @@ void loop(){
 		}
 		isInputComplete = false;
 	//examines the default address location
-   } else if (!isInputComplete && !inLockCycle){
+	} else if (!isInputComplete && !inLockCycle){
 		//sends a dummy query
 		Message msg = Message(defaultAddress, 0, string_table[0]);
 		if (writeToSlave(msg) == 0){
@@ -127,8 +124,9 @@ void loop(){
 			//this is the usual case: no new device
 			//no action required
 		}
-   }
-   delay(100);
+	}
+   
+   delay(10);
 }
 
 byte writeToSlave(Message msg){
@@ -199,6 +197,8 @@ void readArrayFromSerial(byte* buffer, byte length, boolean isNullTerminated){
 		}
 	}
 }	
+
+
 
 void writeToFront(byte* message, byte length){
 	for (byte i = 0; i < length; i++){
