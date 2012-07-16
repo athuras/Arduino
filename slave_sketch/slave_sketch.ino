@@ -14,7 +14,7 @@ prog_char CELL_TYPES[] PROGMEM =      {'A', 'B', 'C', 'C', 'B', 'A'}; // the len
 // Pins are arbitrary, and should be changed depending on the requirements.
 
 const int CELL_COUNT = 0;
-const int CONTROL_SIZE = 4 + 1;
+const int CONTROL_SIZE = 4 + 1; // the last '1' is for the limit switch
 const int DEC_OUT = 10;
 const int MUX_IN = 5; // must be analog in
 const int muxSelectPins[CONTROL_SIZE] = {1,2,3,4,5}; // the 5th pin is to toggle limit switch
@@ -41,7 +41,7 @@ void setup(){
   for ( int i = 0; i < CONTROL_SIZE - 1; i++){
     pinMode(muxSelectPins[i], OUTPUT);
   }
-  for ( int i = 0; i < CONTROL_SIZE -1; i++){
+  for ( int i = 0; i < CONTROL_SIZE - 2; i++){ // note the decoder has one-fewer control pin
     pinMode(decodeControlPins[i], OUTPUT);
   }
 }
@@ -159,4 +159,3 @@ void reply(Message msg){
   Wire.write((byte*)writeBuffer, length);
   return;
 }
-
