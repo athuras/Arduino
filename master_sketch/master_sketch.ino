@@ -43,28 +43,34 @@ void loop(){
 		
 	}
 	if (inLockCycle){
+		Serial.println("DEBUG: In lock cycle");
 		Message msg = Message(lockedColumn, lockedCell, string_table[3]);
 		byte response = writeToSlave(msg);
 		byte limitSwitchStatus = 0;
 		byte analogQuery[msg.bodyLength()];
 		if (response == 0){
 			requestCallBack(lockedColumn, fromSlaveBuffer, slaveResponseLength);
+			Serial.print("DEBUG: Sent unlock to: ");
+			printTarget(lockedColumn, lockedCell);
 			limitSwitchStatus = fromSlaveBuffer[3];
 			if (limitSwitchStatus = 1){ //lock is closed
 				msg = Message(lockedColumn, lockedCell, string_table[1]);
 				if (writeToSlave(msg) == 0){
+					Serial.println("Lock is closed, getting analog sensor val");
 					requestCallBack(lockedColumn, fromSlaveBuffer, slaveResponseLength);
 					memcpy((void*)analogQuery, (void*)fromSlaveBuffer[2], msg.bodyLength());
 					//print to serial to tell front end
 					//send both a 'it's closed' signal
 					//and a signal with the analog query
 				} else {
+					Serial.println("Error in lock cycle, cannot access controller");
 					//error crap
 				}
 				inLockCycle = false;
 				lockedColumn = 0;
 				lockedCell = 0;
 			} else { //lock is still open
+				Serial.println("Lock is open");
 				//do nothing
 			}
 		}
@@ -91,10 +97,8 @@ void loop(){
 					lockedColumn = col;
 					lockedCell = cell;
 				} else {
-					Serial.print(F("Error unlocking: Col: "));
-					Serial.print(col);
-					Serial.print(F(" Cell: "));
-					Serial.print(cell);
+					Serial.print(F("Error unlocking: "));
+					printTarget(col, cell);
 					Serial.print(F(" Resp: "));
 					Serial.println(response);
 				}
@@ -111,10 +115,8 @@ void loop(){
 					Serial.println(response);
 					requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
 				} else {
-					Serial.print(F("Error analog query: Col: "));
-					Serial.print(col);
-					Serial.print(F(" Cell: "));
-					Serial.print(cell);
+					Serial.print(F("Error analog query: "));
+					printTarget(col, cell);
 					Serial.print(F(" Resp: "));
 					Serial.println(response);
 				}
@@ -131,10 +133,8 @@ void loop(){
 					Serial.println(response);
 					requestCallBack(col, fromSlaveBuffer, slaveResponseLength);
 				} else {
-					Serial.print(F("Error limit switch query: Col: "));
-					Serial.print(col);
-					Serial.print(F(" Cell: "));
-					Serial.print(cell);
+					Serial.print(F("Error limit switch query: "));
+					printTarget(col, cell);
 					Serial.print(F(" Resp: "));
 					Serial.println(response);	
 				}      
@@ -277,10 +277,7 @@ byte parseFrontEndCommand(byte* command){
 
 void printError(Message msg, byte response){
 	Serial.print("Error: ");
-	Serial.print("Col: ");
-	Serial.print(msg.col);
-	Serial.print("Cell: ");
-	Serial.print(msg.cell);
+	printTarget(msg.col, msg.cell);
 	Serial.print("Cmd: ");
 	Serial.print(msg.command);
 	Serial.print("Rsp: ");
@@ -293,4 +290,11 @@ void msgDebug(Message msg){
 	for (int i = 0; i < msg.length(); i++){
 		Serial.write(buffer[i]);
 	}
+}
+
+void printTarget(byte col, byte cell){
+	Serial.print("Col: ");
+	Serial.print(col);
+	Serial.print(" Cell: ");
+	Serial.print(cell);
 }
