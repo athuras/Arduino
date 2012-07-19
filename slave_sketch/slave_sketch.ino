@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // This is the slave microcontroller sketch
 
 #include <Wire.h>
@@ -180,7 +179,6 @@ void reply(Message msg){
   Wire.write((byte*)writeBuffer, length);
   return;
 }
-=======
 // This is the slave microcontroller sketch
 
 #include <Wire.h>
