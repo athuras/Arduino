@@ -30,10 +30,11 @@ PROGMEM const char *string_table[] = 	   // change "string_table" name to suit
 const byte DEFAULT_ADDRESS = 99;
 byte current_address = 9;
 const int COMMAND_LENGTH = 12;
+const int RESPONSE_LENGTH = 10;
 Message received_command = Message();
 
 void setup(){
-  Wire.begin(DEFAULT_ADDRESS);
+  Wire.begin(current_address);
   Wire.onReceive(receiveEvent);
   Serial.begin(9600);
   pinMode(MUX_IN, INPUT);
@@ -166,16 +167,15 @@ Message query(byte cell){
     char type = CELL_TYPES[cell - 1];
     muxSelect( (int) cell );
     pinMode(MUX_IN, INPUT);
-    reading = digitalRead(MUX_IN);
+    reading = analogRead(MUX_IN);
     int body[] = {type, reading, 0,0,0,0,0,0}; 
     return Message((char) current_address,(int) cell, body);
   }
 }
 
 void reply(Message msg){
-  int length = 10; //this is dummied
-  char writeBuffer[length];
-  msg.serialize(writeBuffer, length);
-  Wire.write((byte*)writeBuffer, length);
+  char writeBuffer[RESPONSE_LENGTH];
+  msg.serialize(writeBuffer, RESPONSE_LENGTH);
+  Wire.write((byte*)writeBuffer, RESPONSE_LENGTH);
   return;
 }

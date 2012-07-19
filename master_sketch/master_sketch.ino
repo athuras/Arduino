@@ -31,6 +31,7 @@ byte defaultAddress = 99; //pull this out later
 
 void setup(){
   Serial.begin(9600);
+  while (!Serial){;} // Apparently needed for Lonardo Serial.
   Wire.begin();
   newColumnFound = false;
   inLockCycle = false;
