@@ -12,7 +12,7 @@ module TestSuite
   require 'timeout'
 
   # Serial Port Parameters
-  def init(port = '/dev/ttyUSB0')
+  def init(port = '/dev/cu.usbmodem411')
     port_str = port
     baud_rate = 9600
     data_bits = 8
@@ -38,7 +38,7 @@ module TestSuite
     attr_accessor :instruction, :length
     def initialize(text, length = 10)
       #instruction definitions
-      mode{}; 
+      mode = {}; 
       mode['u'], mode['s'], mode['l'], mode['p'] = 'A', 'B', 'C', 'D';
       text = text.split(' ')
       begin
@@ -49,7 +49,7 @@ module TestSuite
         @instruction = nil
         puts 'error formatting strings'
       end
-      (length - instruction.size).times do |e|
+      (length - instruction.length).times do |e|
         instruction += 0;
       end
       @instruction = instruction

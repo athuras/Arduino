@@ -111,6 +111,7 @@ void loop(){
       Serial.println(command);
     }
   } else {
+  /*
 	Serial.print("DEBUG - Query default location");
 	Message msg = Message(DEFAULT_ADDRESS, 0, string_table[3]);
 	messagePrint(msg);
@@ -124,6 +125,7 @@ void loop(){
 	} else {
 		//normal state, do nothing
 	}
+  */
   }
   isInputComplete = false;
   delay(10);
