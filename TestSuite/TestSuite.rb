@@ -18,7 +18,6 @@ module TestSuite
     data_bits = 8
     stop_bits = 1
     parity = SerialPort::NONE
-
     sPort = SerialPort.new(port_str, baud_rate, data_bits, stop_bits, parity)
     return
   end
@@ -36,11 +35,11 @@ module TestSuite
   end
 
   class Instruction
-    attr_accessor :instruction
-    def initialize(text)
+    attr_accessor :instruction, :length
+    def initialize(text, length = 10)
       #instruction definitions
       mode{}; 
-      mode['u'], mode['s'] = 'A', 'B';
+      mode['u'], mode['s'], mode['l'], mode['p'] = 'A', 'B', 'C', 'D';
       text = text.split(' ')
       begin
         instruction = ""
@@ -50,6 +49,9 @@ module TestSuite
         @instruction = nil
         puts 'error formatting strings'
       end
+      (length - instruction.size).times do |e|
+        instruction += 0;
+      end
       @instruction = instruction
       return self
     end
@@ -57,7 +59,7 @@ module TestSuite
       out = ""
       # do somthing
       params.each do |p|
-        out += ';'; out += p;
+        out += p;
       end
       return out
     end
