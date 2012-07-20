@@ -17,7 +17,7 @@ prog_char CELL_TYPES[] PROGMEM =      {'A', 'B', 'C', 'C', 'B', 'A'}; // the len
 const int CELL_COUNT = 0;
 const int CONTROL_SIZE = 4 + 1; // the last '1' is for the limit switch
 const int DEC_OUT = 10;
-const int MUX_IN = 5; // must be analog in
+const int MUX_IN = 6; // must be analog in
 const int muxSelectPins[CONTROL_SIZE] = {1,2,3,4,5}; // the 5th pin is to toggle limit switch
 const int decodeControlPins[CONTROL_SIZE - 1] = {1,2,3,4};
 
