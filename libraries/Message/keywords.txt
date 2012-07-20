@@ -6,6 +6,7 @@
 # Datatypes (KEYWORD1)
 #######################################
 bool	KEYWORD1
+byte	KEYWORD1
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################

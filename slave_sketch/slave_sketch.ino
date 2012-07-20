@@ -3,6 +3,7 @@
 #include <Wire.h>
 #include <Message.h>
 #include <avr/pgmspace.h>
+#include <EEPROM.h>
 
 //set up commands into flash memory
 prog_char unlockcode[] PROGMEM =      {49, 49, 49, 49, 49, 49, 49, 49};   // "String 0" etc are strings to store - change to suit.
@@ -20,7 +21,7 @@ const int MUX_IN = 5; // must be analog in
 const int muxSelectPins[CONTROL_SIZE] = {1,2,3,4,5}; // the 5th pin is to toggle limit switch
 const int decodeControlPins[CONTROL_SIZE - 1] = {1,2,3,4};
 
-const int PULSE_DELAY = 100; // in ms
+const int PULSE_DELAY = 1000;
 
 PROGMEM const char *string_table[] = 	   // change "string_table" name to suit
 {   
@@ -34,6 +35,18 @@ const int RESPONSE_LENGTH = 10;
 Message received_command = Message();
 
 void setup(){
+/*
+  byte storage = EEPROM.read(0);
+
+  if (storage == 255 || (int) storage == DEFAULT_ADDRESS){
+    current_address == DEFAULT_ADDRESS;
+  }
+  else {
+    current_address == (int) storage;
+  }
+   for when we are ready!
+*/
+  
   Wire.begin(current_address);
   Wire.onReceive(receiveEvent);
   Serial.begin(9600);
@@ -142,8 +155,10 @@ void pulse(int pin){
 }
 
 void resetAddress(byte address){
+  // EEPROM.write(0, address); 
   current_address = address;
   Wire.begin(address);
+  delay(4); // EEPROM writes take 3.3ms
   return;
 }
 
@@ -155,6 +170,7 @@ void unlock(byte cell){
     pinMode(DEC_OUT,OUTPUT);
     pulse(DEC_OUT);
   }
+  return;
 }
 
 Message query(byte cell){
