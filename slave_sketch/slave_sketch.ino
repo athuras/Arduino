@@ -82,22 +82,22 @@ void receiveEvent(int value){
   if (current_address == DEFAULT_ADDRESS){
       //compares the first 7 btyes of the received command with new_address command
       //if they match, then the 8th btyte [COMMAND_LENGTH-1] holds the new address to be assigned
-      if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH - 1)){ 
+      if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH - 1) == 0){ 
          resetAddress(received_command.command[COMMAND_LENGTH-1]); 
       }
   } else {
     Message msg = Message();
-    if (memcmp(received_command.command, string_table[0], COMMAND_LENGTH)){ // unlock code sent
+    if (memcmp(received_command.command, string_table[0], COMMAND_LENGTH) == 0){ // unlock code sent
         unlock(received_command.cell);
         msg = query( (int)received_command.cell);
         messagePrint(msg);
         reply( msg ); // returns status of cell opened
-    } else if (memcmp(received_command.command, string_table[1], COMMAND_LENGTH)){ // queried by master
+    } else if (memcmp(received_command.command, string_table[1], COMMAND_LENGTH) == 0){ // queried by master
         msg = query(received_command.cell);
         messagePrint(msg);
         reply( msg );
-    } else if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH-1)){  // this state shouldn't happen 
-    } else if (memcmp(received_command.command, string_table[3], COMMAND_LENGTH)){  //query limit switch
+    } else if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH-1) == 0){  // this state shouldn't happen 
+    } else if (memcmp(received_command.command, string_table[3], COMMAND_LENGTH) == 0){  //query limit switch
       // query limit switch status.
       msg = query( (int)received_command.cell + pow(2,CONTROL_SIZE-1) );
       messagePrint(msg);
