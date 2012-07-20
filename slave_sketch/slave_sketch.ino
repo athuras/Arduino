@@ -88,8 +88,6 @@ void receiveEvent(int value){
   } else {
     Message msg = Message();
     if (memcmp(received_command.command, string_table[0], COMMAND_LENGTH) == 0){ // unlock code sent
-		pinMode(13, OUTPUT);
-		digitalWrite(13, HIGH);
         unlock(received_command.cell);
         msg = query( (int)received_command.cell);
         messagePrint(msg);

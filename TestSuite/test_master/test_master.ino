@@ -10,6 +10,8 @@ prog_char limitswitchcode[] PROGMEM = {52, 52, 52, 52, 52, 52, 52, 52};
 
 PROGMEM const char *string_table[] = {unlockcode, querycode, new_addresscode, limitswitchcode};
 
+const char ucode[] = {49, 49, 49, 49, 49, 49, 49, 49};
+
 const int FRONT_BUFFER = 10;
 const int SLAVE_BUFFER = 10;
 const int RESPONSE_LENGTH = 10;
@@ -54,7 +56,7 @@ void loop(){
 
     if (command == 0){ // Unlock
       Serial.println("DEBUG - Unlock . . .");
-      Message msg = Message(col, cell, string_table[0]);
+      Message msg = Message(col, cell, ucode);
       messagePrint(msg);
       response = writeToSlave(msg); // anticipate block here
       if (response == 0){
@@ -117,13 +119,20 @@ void loop(){
 ////////////////////////////////////////////////////
 // Debug
 void messagePrint(Message msg){
+	/*
   byte buffer[msg.length()];
   msg.serialize((char*)buffer, msg.length());
   for (int i = 0; i < msg.length(); i++){
     Serial.print(buffer[i]);
   }
   Serial.print('\n');
-  return;
+  return;*/
+  Serial.println(msg.col);
+  Serial.println(msg.cell);
+  for (int i = 0; i < 8; i++){
+	Serial.print(msg.command[i]);
+  }
+  Serial.print('\n');
 }
 ////////////////////////////////////////////////////
 
@@ -176,9 +185,14 @@ byte charNumToByteNum(char c){
 // Communication Methods
 byte writeToSlave(Message msg){
   char writeBuffer[COMMAND_LENGTH];
-  msg.serialize(writeBuffer, COMMAND_LENGTH);
+  //msg.serialize(writeBuffer, COMMAND_LENGTH);
   Wire.beginTransmission(msg.col);
-  Wire.write((byte*)writeBuffer, COMMAND_LENGTH);
+  Wire.write(msg.col);
+  Wire.write(msg.cell);
+  for (int i = 0; i < 8; i++){
+	Wire.write(msg.command[i]);
+  }
+  //Wire.write((byte*)writeBuffer, COMMAND_LENGTH);
   return Wire.endTransmission();
 }
 

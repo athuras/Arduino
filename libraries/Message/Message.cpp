@@ -64,7 +64,9 @@ char* Message::serialize(){
 void Message::deserialize(char* input_array, int size){
 	this->col = input_array[0];
 	this->cell = input_array[1];
-	memcpy((void*) this->command, (void*) input_array[2], COMMAND_LENGTH);
+	for(int i = 0; i < COMMAND_LENGTH; i++){
+		this->command[i] = input_array[i+2];
+	}
 }
 
 void Message::empty(){
