@@ -5,6 +5,7 @@
 
 
 //set up commands into flash memory
+/*
 prog_char unlockcode[] PROGMEM = {49, 49, 49, 49, 49, 49, 49, 49};
 prog_char querycode[] PROGMEM =   {50, 50, 50, 50, 50, 50, 50, 50};
 prog_char new_addresscode[] PROGMEM =   {51, 51, 51, 51, 51, 51, 51} ; 
@@ -12,6 +13,16 @@ prog_char limitswitchcode[] PROGMEM = {52, 52, 52, 52, 52, 52, 52, 52};
 
 PROGMEM const char *string_table[] = 	   // change "string_table" name to suit
 {unlockcode, querycode, new_addresscode, limitswitchcode};
+*/
+
+char unlockcode[]  = {49, 49, 49, 49, 49, 49, 49, 49};
+char querycode[]  =   {50, 50, 50, 50, 50, 50, 50, 50};
+char new_addresscode[]  =   {51, 51, 51, 51, 51, 51, 51} ; 
+char limitswitchcode[]  = {52, 52, 52, 52, 52, 52, 52, 52};
+
+const char *string_table[] =
+{ unlockcode, querycode, new_addresscode, limitswitchcode};
+
 
 bool isInputComplete = false;
 bool isSlaveResponseComplete = false;
@@ -85,7 +96,7 @@ void loop(){
 			if (command == 0){ //unlock
 				Serial.println("DEBUG: Unlock command recieved, sending");
 				Message msg = Message(col, cell, string_table[0]);  
-				Serial.print("MSG: ");
+				Serial.println("MSG: ");
 				msgDebug(msg);
 				Serial.print('\n');
 				response = writeToSlave(msg);
