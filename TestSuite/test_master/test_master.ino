@@ -214,6 +214,7 @@ byte parseFrontCommand(byte* command){
   if ((char)command[2] == 'u' || (char)command[2] == 'A'){ // unlock
     return 0;
   }
+
   if ((char)command[2] == 's' || (char)command[2] == 'B'){ // query sensor
     return 1;
   }
