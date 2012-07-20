@@ -39,7 +39,8 @@ module TestSuite
     attr_accessor :instruction
     def initialize(text)
       #instruction definitions
-      mode{}; mode['u'], mode['s'] = 'UNLOCK_STRING', 'STATUS_STRING';
+      mode{}; 
+      mode['u'], mode['s'] = 'A', 'B';
       text = text.split(' ')
       begin
         instruction = ""
