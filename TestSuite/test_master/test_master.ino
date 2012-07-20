@@ -87,10 +87,20 @@ void loop(){
       }
     }
     else if (command == 2){
-
-    }
-    else if (command == 3){ // Query Limit Switch
-      Serial.print("DEBUG - Case 2");
+      Serial.print("DEBUG - Limit Switch Query . . .");
+      Message msg = Message(col, cell, string_table[2]);
+      messagePrint(msg);
+      response = writeToSlave(msg);
+      if (response == 0){
+        Serial.print("DEBUG - Limit Switch Value: \n");
+        requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
+        messagePrint(msg);
+        writeToFront(fromSlaveBuffer, RESPONSE_LENGTH);
+      }
+      else {
+        Serial.print("DEBUG - Error Querying Limit Switch");
+        Serial.write(1);
+      }
     }
     else if (command == 3){ // Request Column POST (all limit switches)
       Serial.print("DEBUG - Case 3");
