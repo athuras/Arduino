@@ -28,6 +28,7 @@ bool inLockCycle  = false;
   int lockDelay   = 100;
   byte lockedColumn = 0;
   byte lockedCell   = 0;
+  const byte DEFAULT_ADDRESS = 99;
 bool newColumnFound   = false;
 bool isInputComplete  = false;
 bool isSlaveResponseComplete = false;
@@ -109,6 +110,20 @@ void loop(){
       Serial.print("DEBUG - Not Valid Switch: ");
       Serial.println(command);
     }
+  } else {
+	Serial.print("DEBUG - Query default location");
+	Message msg = Message(DEFAULT_ADDRESS, 0, string_table[3]);
+	messagePrint(msg);
+	byte response = writeToSlave(msg);
+	if (response == 0){
+		Serial.print("DEBUG - Found new column\n");
+		requestCallBack(DEFAULT_ADDRESS, fromSlaveBuffer, RESPONSE_LENGTH);
+		messagePrint(msg);
+		writeToFront(fromSlaveBuffer, RESPONSE_LENGTH);
+		newColumnFound = true;
+	} else {
+		//normal state, do nothing
+	}
   }
   isInputComplete = false;
   delay(10);
@@ -211,16 +226,17 @@ void writeToFront(string k){
 */
 
 byte parseFrontCommand(byte* command){
-  if ((char)command[2] == 'u' || (char)command[2] == 'A'){ // unlock
+	char comp = (char)command[0];
+  if (comp == 'U' || comp == 'A'){ // unlock
     return 0;
   }
-  if ((char)command[2] == 's' || (char)command[2] == 'B'){ // query sensor
+  if (comp == 'S' || comp == 'B'){ // query sensor
     return 1;
   }
-  if ((char)command[2] == 'l' || (char)command[2] == 'C'){ // query limit switch
+  if (comp == 'L' || comp == 'C'){ // query limit switch
     return 2;
   }
-  if ((char)command[2] == 'D'){ // spam query all limit switches
+  if (comp == 'D'){ // spam query all limit switches
     return 3;
   }
   return 4;
