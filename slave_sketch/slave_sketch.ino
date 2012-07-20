@@ -82,24 +82,24 @@ void receiveEvent(int value){
   if (current_address == DEFAULT_ADDRESS){
       //compares the first 7 btyes of the received command with new_address command
       //if they match, then the 8th btyte [COMMAND_LENGTH-1] holds the new address to be assigned
-      if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH - 1) == 0){ 
+      if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH - 1)){ 
          resetAddress(received_command.command[COMMAND_LENGTH-1]); 
       }
   } else {
     Message msg = Message();
-    if (memcmp(received_command.command, string_table[0], COMMAND_LENGTH) == 0){ // unlock code sent
+    if (memcmp(received_command.command, string_table[0], COMMAND_LENGTH)){ // unlock code sent
         unlock(received_command.cell);
-        msg = analogQuery(received_command.cell);
+        msg = query( (int)received_command.cell);
         messagePrint(msg);
         reply( msg ); // returns status of cell opened
-    } else if (memcmp(received_command.command, string_table[1], COMMAND_LENGTH) == 0){ // queried by master
-        msg = analogQuery(received_command.cell);
+    } else if (memcmp(received_command.command, string_table[1], COMMAND_LENGTH)){ // queried by master
+        msg = query(received_command.cell);
         messagePrint(msg);
         reply( msg );
-    } else if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH-1) == 0){  // this state shouldn't happen 
-    } else if (memcmp(received_command.command, string_table[3], COMMAND_LENGTH) == 0){  //query limit switch
+    } else if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH-1)){  // this state shouldn't happen 
+    } else if (memcmp(received_command.command, string_table[3], COMMAND_LENGTH)){  //query limit switch
       // query limit switch status.
-      msg = limitQuery(received_command.cell);
+      msg = query( (int)received_command.cell + pow(2,CONTROL_SIZE-1) );
       messagePrint(msg);
       reply(msg); // Toggles the last MUX port to trigger limit switch.
     }
@@ -115,37 +115,34 @@ void messagePrint(Message msg){
 }
 
 // One-based. i.e. muxSelect( 1 ) selects the first (zeroith) mux in.
-// for active-low multiplexors
-void muxSelect(byte id, const int addresses[]){ 
-	if (id > 0 && id < 1 + (int) pow(2,CONTROL_SIZE-1)){
-		byte aux = id - 1;
-		for (byte k = CONTROL_SIZE - 1; k >= 0; k--){
-			byte size = (byte) pow( (double)2, (double)k );
-			if (aux >= size){
-				digitalWrite(addresses[k], LOW); 
-				aux -= size;
-			} else {
-				digitalWrite(addresses[k], HIGH);
-			}
-		}
-	}
+void muxSelect(int id){ 
+ int aux = id - 1;
+ for ( int k = CONTROL_SIZE - 1; k >= 0; k--){
+    int a = aux % (int) pow(2,k);
+    if ( a == aux ){
+      digitalWrite(muxSelectPins[k], LOW);
+    }
+    else {
+      digitalWrite(muxSelectPins[k], HIGH);
+      aux = aux - a;
+    }
+ }
+ return;
 }
 // Again, one-based. decSelect(1) selects the first (zeroith) dec out.
-// for active-low decoders
-void decSelect(byte id){
-	if (id > 0 && id < 1 + (byte) pow(2,CONTROL_SIZE-1)){
-		byte aux = id - 1;
-		for (byte k = CONTROL_SIZE - 1; k >= 0; k--){
-			byte size = (byte) pow( (double)2, (double)k );
-			if (aux >= size){
-				digitalWrite(decodeControlPins[k], LOW); 
-				aux -= size;
-			} else {
-				digitalWrite(decodeControlPins[k], HIGH);
-			}
-		}
-	}
-	return;
+void decSelect(int id){
+  int aux = id - 1;
+  for ( int k = CONTROL_SIZE -1; k >=0; k--){
+    int a = aux % (int) pow(2,k);
+    if ( a == aux ){
+      digitalWrite(decodeControlPins[k], LOW);
+    }
+    else {
+      digitalWrite(decodeControlPins[k], HIGH);
+      aux = aux - a;
+    }
+  }
+  return;
 }
 
 // To avoid embarrasing mass unlock scenarios, pulse timing should be tuned to relay.
@@ -176,7 +173,7 @@ void unlock(byte cell){
   return;
 }
 
-Message query(byte cell, const int addresses[]){
+Message query(byte cell){
  int reading = LOW;
   if (cell == 0){
     int proxy_cell_count[] = {CELL_COUNT, 0,0,0,0,0,0,0};
@@ -184,24 +181,12 @@ Message query(byte cell, const int addresses[]){
      // return the number of consecutaive cells to master. master should then sequentially query each cell.
   } else {
     char type = CELL_TYPES[cell - 1];
-    muxSelect( (int) cell , addresses);
+    muxSelect( (int) cell );
     pinMode(MUX_IN, INPUT);
     reading = analogRead(MUX_IN);
     int body[] = {type, reading, 0,0,0,0,0,0}; 
     return Message((char) current_address,(int) cell, body);
   }
-}
-
-Message limitQuery(byte cell){
-	pinMode(muxSelectPins[CONTROL_SIZE], OUTPUT);
-	digitalWrite(muxSelectPins[CONTROL_SIZE], HIGH);
-	return query(cell, muxSelectPins);
-}
-
-Message analogQuery(byte cell){
-	pinMode(muxSelectPins[CONTROL_SIZE], OUTPUT);
-	digitalWrite(muxSelectPins[CONTROL_SIZE], LOW);
-	return query(cell, muxSelectPins);
 }
 
 void reply(Message msg){

@@ -28,7 +28,6 @@ bool inLockCycle  = false;
   int lockDelay   = 100;
   byte lockedColumn = 0;
   byte lockedCell   = 0;
-  const byte DEFAULT_ADDRESS = 99;
 bool newColumnFound   = false;
 bool isInputComplete  = false;
 bool isSlaveResponseComplete = false;
@@ -47,8 +46,8 @@ void loop(){
   }
   if (isInputComplete){
     Serial.println("DEBUG - Shit Just Got Real.");
-    byte col = parseFrontCol(fromFrontBuffer);
-    byte cell = parseFrontCell(fromFrontBuffer);
+    byte col = charNumToByteNum((char)fromFrontBuffer[0]);
+    byte cell = charNumToByteNum((char)fromFrontBuffer[1]);
     byte command = parseFrontCommand(fromFrontBuffer);
     byte response = 0;
     Serial.print(col); Serial.println(cell);
@@ -110,22 +109,6 @@ void loop(){
       Serial.print("DEBUG - Not Valid Switch: ");
       Serial.println(command);
     }
-  } else {
-  /*
-	Serial.print("DEBUG - Query default location");
-	Message msg = Message(DEFAULT_ADDRESS, 0, string_table[3]);
-	messagePrint(msg);
-	byte response = writeToSlave(msg);
-	if (response == 0){
-		Serial.print("DEBUG - Found new column\n");
-		requestCallBack(DEFAULT_ADDRESS, fromSlaveBuffer, RESPONSE_LENGTH);
-		messagePrint(msg);
-		writeToFront(fromSlaveBuffer, RESPONSE_LENGTH);
-		newColumnFound = true;
-	} else {
-		//normal state, do nothing
-	}
-  */
   }
   isInputComplete = false;
   delay(10);
@@ -187,7 +170,7 @@ void readArrayFromSerial(byte* buffer, byte num, bool isNullTerminated){
 byte charNumToByteNum(char c){
   if (c >= 48 && c <= 57){
     return (c - 48);
-  } 
+  }
 }
 /////////////////////////////////////////////////////
 // Communication Methods
@@ -228,26 +211,17 @@ void writeToFront(string k){
 */
 
 byte parseFrontCommand(byte* command){
-	char comp = (char)command[0];
-  if (comp == 'U' || comp == 'A'){ // unlock
+  if ((char)command[2] == 'u' || (char)command[2] == 'A'){ // unlock
     return 0;
   }
-  if (comp == 'S' || comp == 'B'){ // query sensor
+  if ((char)command[2] == 's' || (char)command[2] == 'B'){ // query sensor
     return 1;
   }
-  if (comp == 'L' || comp == 'C'){ // query limit switch
+  if ((char)command[2] == 'l' || (char)command[2] == 'C'){ // query limit switch
     return 2;
   }
-  if (comp == 'D'){ // spam query all limit switches
+  if ((char)command[2] == 'D'){ // spam query all limit switches
     return 3;
   }
   return 4;
-}
-
-byte parseFrontCol(byte* command){
-	return charNumToByteNum( (char) command[1]);
-}
-
-byte parseFrontCell(byte* command){
-	return charNumToByteNum( (char) command[1]);
 }
