@@ -99,7 +99,7 @@ void receiveEvent(int value){
     } else if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH-1) == 0){  // this state shouldn't happen 
     } else if (memcmp(received_command.command, string_table[3], COMMAND_LENGTH) == 0){  //query limit switch
       // query limit switch status.
-      msg = query( (int)received_command.cell + pow(2,CONTROL_SIZE-1) );
+      msg = query( (int)received_command.cell);
       messagePrint(msg);
       reply(msg); // Toggles the last MUX port to trigger limit switch.
     }
@@ -115,34 +115,37 @@ void messagePrint(Message msg){
 }
 
 // One-based. i.e. muxSelect( 1 ) selects the first (zeroith) mux in.
+// for active-low multiplexors
 void muxSelect(int id){ 
- int aux = id - 1;
- for ( int k = CONTROL_SIZE - 1; k >= 0; k--){
-    int a = aux % (int) pow(2,k);
-    if ( a == aux ){
-      digitalWrite(muxSelectPins[k], LOW);
-    }
-    else {
-      digitalWrite(muxSelectPins[k], HIGH);
-      aux = aux - a;
-    }
- }
- return;
+	if (id > 0 && id < 1 + (int) pow(2,CONTROL_SIZE-1)){
+		int aux = id - 1;
+		for (int k = CONTROL_SIZE - 1; k >= 0; k--){
+			int size = (int) pow( (double)2, (double)k );
+			if (aux >= size){
+				digitalWrite(muxSelectPins[k], LOW); 
+				aux -= size;
+			} else {
+				digitalWrite(muxSelectPins[k], HIGH);
+			}
+		}
+	}
 }
 // Again, one-based. decSelect(1) selects the first (zeroith) dec out.
+// for active-low decoders
 void decSelect(int id){
-  int aux = id - 1;
-  for ( int k = CONTROL_SIZE -1; k >=0; k--){
-    int a = aux % (int) pow(2,k);
-    if ( a == aux ){
-      digitalWrite(decodeControlPins[k], LOW);
-    }
-    else {
-      digitalWrite(decodeControlPins[k], HIGH);
-      aux = aux - a;
-    }
-  }
-  return;
+	if (id > 0 && id < 1 + (int) pow(2,CONTROL_SIZE-1)){
+		int aux = id - 1;
+		for (int k = CONTROL_SIZE - 1; k >= 0; k--){
+			int size = (int) pow( (double)2, (double)k );
+			if (aux >= size){
+				digitalWrite(decodeControlPins[k], LOW); 
+				aux -= size;
+			} else {
+				digitalWrite(decodeControlPins[k], HIGH);
+			}
+		}
+	}
+	return;
 }
 
 // To avoid embarrasing mass unlock scenarios, pulse timing should be tuned to relay.
