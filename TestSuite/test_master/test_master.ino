@@ -47,8 +47,8 @@ void loop(){
   }
   if (isInputComplete){
     Serial.println("DEBUG - Shit Just Got Real.");
-    byte col = charNumToByteNum((char)fromFrontBuffer[0]);
-    byte cell = charNumToByteNum((char)fromFrontBuffer[1]);
+    byte col = parseFrontCol(fromFrontBuffer);
+    byte cell = parseFrontCell(fromFrontBuffer);
     byte command = parseFrontCommand(fromFrontBuffer);
     byte response = 0;
     Serial.print(col); Serial.println(cell);
@@ -187,7 +187,7 @@ void readArrayFromSerial(byte* buffer, byte num, bool isNullTerminated){
 byte charNumToByteNum(char c){
   if (c >= 48 && c <= 57){
     return (c - 48);
-  }
+  } 
 }
 /////////////////////////////////////////////////////
 // Communication Methods
@@ -242,4 +242,12 @@ byte parseFrontCommand(byte* command){
     return 3;
   }
   return 4;
+}
+
+byte parseFrontCol(byte* command){
+	return charNumToByteNum( (char) command[1]);
+}
+
+byte parseFrontCell(byte* command){
+	return charNumToByteNum( (char) command[1]);
 }
