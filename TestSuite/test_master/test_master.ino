@@ -3,10 +3,10 @@
 #include <avr/pgmspace.h>
 /////////////////////////////////////////////////////
 // Reference
-const char unlockcode[]  = {49, 49, 49, 49, 49, 49, 49, 49};
-const char querycode[]  =   {50, 50, 50, 50, 50, 50, 50, 50};
-const char new_addresscode[]  =   {51, 51, 51, 51, 51, 51, 51}; 
-const char limitswitchcode[]  = {52, 52, 52, 52, 52, 52, 52, 52};
+const char unlockcode[]   =   {49, 49, 49, 49, 49, 49, 49, 49};
+const char querycode[]    =   {50, 50, 50, 50, 50, 50, 50, 50};
+const char new_addresscode[]  =   {51, 51, 51, 51, 51, 51, 51, 51}; 
+const char limitswitchcode[]  =   {52, 52, 52, 52, 52, 52, 52, 52};
 const char echo[] = {53, 53, 53, 53, 53, 53, 53, 53};
 
 const char *string_table[] = {unlockcode, querycode, new_addresscode, limitswitchcode, echo};
@@ -63,7 +63,6 @@ void loop(){
       Message msg = Message(col, cell, string_table[0]);
       messagePrint(msg);
       response = writeToSlave(msg); // anticipate block here
-
       if (response == 0){
         Serial.print("DEBUG - Response:\n");
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
@@ -76,6 +75,7 @@ void loop(){
 		    Serial.println(response);
       }
     }
+
     else if (command == 1){ // Query Analog Sensor
       Serial.print("DEBUG - Sensor Query . . . \n");
       Message msg = Message(col, cell, string_table[1]);
@@ -92,7 +92,8 @@ void loop(){
 		    Serial.println(response);
       }
     }
-    else if (command == 2){
+
+    else if (command == 2){ // Query Limit Switch
       Serial.print("DEBUG - Limit Switch Query . . .");
       Message msg = Message(col, cell, string_table[3]);
       messagePrint(msg);
@@ -105,18 +106,31 @@ void loop(){
       }
       else {
         Serial.print("DEBUG - Error Querying Limit Switch - I2C Resp: ");
-		Serial.println(response);
+    		Serial.println(response);
       }
     }
-    else if (command == 3){ // Request Column POST (all limit switches)
+
+    else if (command == 3){ // Request Column POST (all limit switches) //probably not used
       Serial.print("DEBUG - Case 3 \n");
+    }
+
+    else if (command == 4){ // Reset Address of Specified column. Whereing the cell value is the new address
+      Message msg = Message(col, cell, string_table[2]);
+      messagePrint(msg);
+      response = writeToSlave(msg);
+      if (response == 0){
+        Serial.print("DEBUG - New Address Assigned: ");
+        Serial.print(cell); Serial.print('\n');
+      }
+      else {
+        Serial.println("Shit Went Down, we can only watch now");
+      }
     }
     else {
       Serial.print("DEBUG - Not Valid Switch: ");
       Serial.println(command);
     }
   }
-  isInputComplete = false;
 
   // Periodic Default Address echo request.
   if (cycle == POLL_INTERVAL){
@@ -129,11 +143,11 @@ void loop(){
       // so now the front will KNOW there is a new column, and send the appropriate new address message
     }
     else {
-      Serial.print((char)response); Serial.print('\n');
+      Serial.print(response); Serial.print('\n');
     }
-
   }
 
+  isInputComplete = false;
   cycle++;
   delay(CYCLE_DELAY);
 }
