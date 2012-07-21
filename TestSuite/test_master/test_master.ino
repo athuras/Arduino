@@ -7,9 +7,11 @@ const char unlockcode[]  = {49, 49, 49, 49, 49, 49, 49, 49};
 const char querycode[]  =   {50, 50, 50, 50, 50, 50, 50, 50};
 const char new_addresscode[]  =   {51, 51, 51, 51, 51, 51, 51}; 
 const char limitswitchcode[]  = {52, 52, 52, 52, 52, 52, 52, 52};
+const char echo[] = {53, 53, 53, 53, 53, 53, 53, 53};
 
-const char *string_table[] = {unlockcode, querycode, new_addresscode, limitswitchcode};
+const char *string_table[] = {unlockcode, querycode, new_addresscode, limitswitchcode, echo};
 
+const byte DEFAULT_ADDRESS = 0x14; // THIS SHOULD NEVER BE SET TO 255
 const int FRONT_BUFFER = 10;
 const int SLAVE_BUFFER = 10;
 const int RESPONSE_LENGTH = 10;
@@ -25,6 +27,9 @@ byte fromFrontBuffer[ FRONT_BUFFER ];
 
 /////////////////////////////////////////////////////
 // State Variables
+int cycle = 0;
+const int CYCLE_DELAY = 10;
+const int POLL_INTERVAL = 100; // in integer multiples of 10ms cycles
 bool inLockCycle  = false;
   int lockDelay   = 100;
   byte lockedColumn = 0;
@@ -52,11 +57,13 @@ void loop(){
     byte command = parseFrontCommand(fromFrontBuffer);
     byte response = 0;
     Serial.print(col); Serial.print(" "); Serial.println(cell);
+
     if (command == 0){ // Unlock
       Serial.println("DEBUG - Unlock . . .");
       Message msg = Message(col, cell, string_table[0]);
       messagePrint(msg);
       response = writeToSlave(msg); // anticipate block here
+
       if (response == 0){
         Serial.print("DEBUG - Response:\n");
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
@@ -66,7 +73,7 @@ void loop(){
       }
       else {
         Serial.print("DEBUG - Error Unlocking - I2C Resp:");
-		Serial.println(response);
+		    Serial.println(response);
       }
     }
     else if (command == 1){ // Query Analog Sensor
@@ -78,11 +85,11 @@ void loop(){
         Serial.print("DEBUG - Analog Value: \n");
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
         messagePrint(msg);
-		writeAnalogToFront(msg);
+		    writeAnalogToFront(msg);
       }
       else {
         Serial.print("DEBUG - Error Qeurying Sensor  - I2C Resp: ");
-		Serial.println(response);
+		    Serial.println(response);
       }
     }
     else if (command == 2){
@@ -110,7 +117,25 @@ void loop(){
     }
   }
   isInputComplete = false;
-  delay(10);
+
+  // Periodic Default Address echo request.
+  if (cycle == POLL_INTERVAL){
+    Serial.print("Poll DEFAULT: ");
+    cycle = 0;
+    Message msg = Message(DEFAULT_ADDRESS, 0, string_table[4]);
+    byte response = writeToSlave(msg);
+    if (response = 0){
+      requestCallBack(DEFAULT_ADDRESS, fromSlaveBuffer, RESPONSE_LENGTH);
+      // so now the front will KNOW there is a new column, and send the appropriate new address message
+    }
+    else {
+      Serial.print((char)response); Serial.print('\n');
+    }
+
+  }
+
+  cycle++;
+  delay(CYCLE_DELAY);
 }
 
 ////////////////////////////////////////////////////

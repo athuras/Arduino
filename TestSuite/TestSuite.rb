@@ -26,7 +26,8 @@ module TestSuite
   def io(msg, port)
     s = []
     port.write(msg.instruction)
-    puts port.read
+    s.push(port.read)
+    return s
   end
 
   def send(command, port, wait=2)

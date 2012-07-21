@@ -10,11 +10,12 @@ const char unlockcode[]  =      {49, 49, 49, 49, 49, 49, 49, 49};   // "String 0
 const char querycode[]  =       {50, 50, 50, 50, 50, 50, 50, 50};
 const char new_addresscode[]  = {51, 51, 51, 51, 51, 51, 51}; 
 const char limitswitchcode[]  = {52, 52, 52, 52, 52, 52, 52, 52};
-const char CELL_TYPES[]  =      {'A', 'B', 'C', 'C', 'B', 'A'}; // the length of this array relates to how many cells there are.
+const char echo[]             = {53, 53, 53, 53, 53, 53, 53, 53};
+const byte CELL_TYPES[]  =      {1,2,3,4,5,6,7,8,9,10}; // the length of this array relates to how many cells there are.
 
 // Pins are arbitrary, and should be changed depending on the requirements.
 
-const int CELL_COUNT = 0;
+const int CELL_COUNT = 10;
 const int CONTROL_SIZE = 4 + 1; // the last '1' is for the limit switch
 const int DEC_OUT = 10;
 const int MUX_IN = 6; // must be analog in
@@ -25,28 +26,25 @@ const int PULSE_DELAY = 1000;
 
 const char *string_table[] = 	   // change "string_table" name to suit
 {   
-  unlockcode, querycode, new_addresscode, limitswitchcode
+  unlockcode, querycode, new_addresscode, limitswitchcode, echo
 };
 
-const byte DEFAULT_ADDRESS = 99;
-byte current_address = 9;
+const byte DEFAULT_ADDRESS = 0x14; // THIS VALUE MUST NEVER BE SET TO 255.
+byte current_address = 0;
 const int COMMAND_LENGTH = 12;
 const int RESPONSE_LENGTH = 10;
 const int CMD_BODY_LENGTH = 8;
 Message received_command = Message(); 
 
 void setup(){
-/*
+  // Resilient Address
   byte storage = EEPROM.read(0);
-
-  if (storage == 255 || (int) storage == DEFAULT_ADDRESS){
+  if (storage == 255 || storage == DEFAULT_ADDRESS){
     current_address == DEFAULT_ADDRESS;
   }
   else {
-    current_address == (int) storage;
+    current_address == storage;
   }
-   for when we are ready!
-*/
   
   Wire.begin(current_address);
   Wire.onReceive(receiveEvent);
@@ -79,33 +77,30 @@ void receiveEvent(int value){
   received_command.deserialize(buffer, cnt);
   Serial.print("Recieved Message\n");
   messagePrint(received_command);
-  if (current_address == DEFAULT_ADDRESS){
-      //compares the first 7 btyes of the received command with new_address command
-      //if they match, then the 8th btyte [COMMAND_LENGTH-1] holds the new address to be assigned
-      if (memcmp(received_command.command, string_table[2], CMD_BODY_LENGTH-1) == 0){ 
-         //resetAddress(received_command.command[COMMAND_LENGTH-1]); 
-      }
-  } else {
-    Message msg = Message();
-    if (memcmp(received_command.command, string_table[0], CMD_BODY_LENGTH) == 0){ // unlock code sent
-		Serial.println("In unlock");
-        unlock(received_command.cell);
-        msg = query( (int)received_command.cell);
-        messagePrint(msg);
-        reply( msg ); // returns status of cell opened
-    } else if (memcmp(received_command.command, string_table[1], CMD_BODY_LENGTH) == 0){ // queried by master
-		Serial.println("In analog query");
-        msg = query(received_command.cell);
-        messagePrint(msg);
-        reply( msg );
-    } else if (memcmp(received_command.command, string_table[2], CMD_BODY_LENGTH-1) == 0){  // this state shouldn't happen 
-    } else if (memcmp(received_command.command, string_table[3], CMD_BODY_LENGTH) == 0){  //query limit switch
-      // query limit switch status.
-	  Serial.println("In limit switch query");
-      msg = query( (int)received_command.cell + pow(2,CONTROL_SIZE-1) );
+
+  Message msg = Message();
+  if (memcmp(received_command.command, string_table[4], CMD_BODY_LENGTH) == 0){ // echo requested
+   reply(received_command); 
+  } else if (memcmp(received_command.command, string_table[2], CMD_BODY_LENGTH-1) == 0){ // reset address code sent
+    resetAddress(received_command.command[COMMAND_LENGTH-1]);
+  } else if (memcmp(received_command.command, string_table[0], CMD_BODY_LENGTH) == 0){ // unlock code sent
+	Serial.println("In unlock");
+      unlock(received_command.cell);
+      msg = query( (int)received_command.cell);
       messagePrint(msg);
-      reply(msg); // Toggles the last MUX port to trigger limit switch.
-    }
+      reply( msg ); // returns status of cell opened
+  } else if (memcmp(received_command.command, string_table[1], CMD_BODY_LENGTH) == 0){ // queried by master
+	Serial.println("In analog query");
+      msg = query(received_command.cell);
+      messagePrint(msg);
+      reply( msg );
+  } else if (memcmp(received_command.command, string_table[2], CMD_BODY_LENGTH-1) == 0){  // this state shouldn't happen 
+  } else if (memcmp(received_command.command, string_table[3], CMD_BODY_LENGTH) == 0){  //query limit switch
+    // query limit switch status.
+	Serial.println("In limit switch query");
+    msg = query( (int)received_command.cell + pow(2,CONTROL_SIZE-1) );
+    messagePrint(msg);
+    reply(msg); // Toggles the last MUX port to trigger limit switch.
   }
 }
 void messagePrint(Message msg){
@@ -160,10 +155,9 @@ void pulse(int pin){
 }
 
 void resetAddress(byte address){
-  // EEPROM.write(0, address); 
+  EEPROM.write(0, address); 
   current_address = address;
   Wire.begin(address);
-  delay(4); // EEPROM writes take 3.3ms
   return;
 }
 
@@ -185,11 +179,11 @@ Message query(byte cell){
     return Message((char) current_address, 0, proxy_cell_count);
      // return the number of consecutaive cells to master. master should then sequentially query each cell.
   } else {
-    char type = CELL_TYPES[cell - 1];
+    byte type = CELL_TYPES[cell - 1];
     muxSelect( (int) cell );
     pinMode(MUX_IN, INPUT);
     reading = analogRead(MUX_IN);
-	byte body[] = {type, highByte(reading), lowByte(reading), 0, 0, 0, 0, 0};
+	  byte body[] = {type, highByte(reading), lowByte(reading), 0, 0, 0, 0, 0};
     return Message((char)current_address, (char)cell, (char*)body);
   }
 }
