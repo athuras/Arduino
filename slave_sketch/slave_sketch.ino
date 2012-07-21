@@ -196,8 +196,8 @@ Message query(byte cell){
     muxSelect( (int) cell );
     pinMode(MUX_IN, INPUT);
     reading = analogRead(MUX_IN);
-    int body[] = {type, reading, 0,0,0,0,0,0}; 
-    return Message((char) current_address,(int) cell, body);
+	byte body[] = {type, highByte(reading), lowByte(reading), 0, 0, 0, 0, 0};
+    return Message((char)current_address, (char)cell, (char*)body);
   }
 }
 
