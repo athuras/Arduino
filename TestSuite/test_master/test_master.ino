@@ -3,14 +3,12 @@
 #include <avr/pgmspace.h>
 /////////////////////////////////////////////////////
 // Reference
-prog_char unlockcode[] PROGMEM = {49, 49, 49, 49, 49, 49, 49, 49};
-prog_char querycode[] PROGMEM =   {50, 50, 50, 50, 50, 50, 50, 50};
-prog_char new_addresscode[] PROGMEM =   {51, 51, 51, 51, 51, 51, 51}; 
-prog_char limitswitchcode[] PROGMEM = {52, 52, 52, 52, 52, 52, 52, 52};
+const char unlockcode[]  = {49, 49, 49, 49, 49, 49, 49, 49};
+const char querycode[]  =   {50, 50, 50, 50, 50, 50, 50, 50};
+const char new_addresscode[]  =   {51, 51, 51, 51, 51, 51, 51}; 
+const char limitswitchcode[]  = {52, 52, 52, 52, 52, 52, 52, 52};
 
-PROGMEM const char *string_table[] = {unlockcode, querycode, new_addresscode, limitswitchcode};
-
-const char ucode[] = {49, 49, 49, 49, 49, 49, 49, 49};
+const char *string_table[] = {unlockcode, querycode, new_addresscode, limitswitchcode};
 
 const int FRONT_BUFFER = 10;
 const int SLAVE_BUFFER = 10;
@@ -56,7 +54,7 @@ void loop(){
 
     if (command == 0){ // Unlock
       Serial.println("DEBUG - Unlock . . .");
-      Message msg = Message(col, cell, ucode);
+      Message msg = Message(col, cell, string_table[0]);
       messagePrint(msg);
       response = writeToSlave(msg); // anticipate block here
       if (response == 0){
@@ -90,7 +88,7 @@ void loop(){
     }
     else if (command == 2){
       Serial.print("DEBUG - Limit Switch Query . . .");
-      Message msg = Message(col, cell, string_table[2]);
+      Message msg = Message(col, cell, string_table[3]);
       messagePrint(msg);
       response = writeToSlave(msg);
       if (response == 0){

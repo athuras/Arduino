@@ -6,11 +6,11 @@
 #include <EEPROM.h>
 
 //set up commands into flash memory
-prog_char unlockcode[] PROGMEM =      {49, 49, 49, 49, 49, 49, 49, 49};   // "String 0" etc are strings to store - change to suit.
-prog_char querycode[] PROGMEM =       {50, 50, 50, 50, 50, 50, 50, 50};
-prog_char new_addresscode[] PROGMEM = {51, 51, 51, 51, 51, 51, 51}; 
-prog_char limitswitchcode[] PROGMEM = {52, 52, 52, 52, 52, 52, 52, 52};
-prog_char CELL_TYPES[] PROGMEM =      {'A', 'B', 'C', 'C', 'B', 'A'}; // the length of this array relates to how many cells there are.
+const char unlockcode[]  =      {49, 49, 49, 49, 49, 49, 49, 49};   // "String 0" etc are strings to store - change to suit.
+const char querycode[]  =       {50, 50, 50, 50, 50, 50, 50, 50};
+const char new_addresscode[]  = {51, 51, 51, 51, 51, 51, 51}; 
+const char limitswitchcode[]  = {52, 52, 52, 52, 52, 52, 52, 52};
+const char CELL_TYPES[]  =      {'A', 'B', 'C', 'C', 'B', 'A'}; // the length of this array relates to how many cells there are.
 
 // Pins are arbitrary, and should be changed depending on the requirements.
 
@@ -23,7 +23,7 @@ const int decodeControlPins[CONTROL_SIZE - 1] = {1,2,3,4};
 
 const int PULSE_DELAY = 1000;
 
-PROGMEM const char *string_table[] = 	   // change "string_table" name to suit
+const char *string_table[] = 	   // change "string_table" name to suit
 {   
   unlockcode, querycode, new_addresscode, limitswitchcode
 };
@@ -32,7 +32,8 @@ const byte DEFAULT_ADDRESS = 99;
 byte current_address = 5;
 const int COMMAND_LENGTH = 12;
 const int RESPONSE_LENGTH = 10;
-Message received_command = Message();
+const int CMD_BODY_LENGTH = 8;
+Message received_command = Message(); 
 
 void setup(){
 /*
@@ -78,27 +79,29 @@ void receiveEvent(int value){
   received_command.deserialize(buffer, cnt);
   Serial.print("Recieved Message\n");
   messagePrint(received_command);
-  Serial.println("Response:");
   if (current_address == DEFAULT_ADDRESS){
       //compares the first 7 btyes of the received command with new_address command
       //if they match, then the 8th btyte [COMMAND_LENGTH-1] holds the new address to be assigned
-      if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH - 1) == 0){ 
-         resetAddress(received_command.command[COMMAND_LENGTH-1]); 
+      if (memcmp(received_command.command, string_table[2], CMD_BODY_LENGTH-1) == 0){ 
+         //resetAddress(received_command.command[COMMAND_LENGTH-1]); 
       }
   } else {
     Message msg = Message();
-    if (memcmp(received_command.command, string_table[0], COMMAND_LENGTH) == 0){ // unlock code sent
+    if (memcmp(received_command.command, string_table[0], CMD_BODY_LENGTH) == 0){ // unlock code sent
+		Serial.println("In unlock");
         unlock(received_command.cell);
         msg = query( (int)received_command.cell);
         messagePrint(msg);
         reply( msg ); // returns status of cell opened
-    } else if (memcmp(received_command.command, string_table[1], COMMAND_LENGTH) == 0 ){ // queried by master
+    } else if (memcmp(received_command.command, string_table[1], CMD_BODY_LENGTH) == 0){ // queried by master
+		Serial.println("In analog query");
         msg = query(received_command.cell);
         messagePrint(msg);
         reply( msg );
-    } else if (memcmp(received_command.command, string_table[2], COMMAND_LENGTH-1) == 0 ){  // this state shouldn't happen 
-    } else if (memcmp(received_command.command, string_table[3], COMMAND_LENGTH) == 0){  //query limit switch
+    } else if (memcmp(received_command.command, string_table[2], CMD_BODY_LENGTH-1) == 0){  // this state shouldn't happen 
+    } else if (memcmp(received_command.command, string_table[3], CMD_BODY_LENGTH) == 0){  //query limit switch
       // query limit switch status.
+	  Serial.println("In limit switch query");
       msg = query( (int)received_command.cell + pow(2,CONTROL_SIZE-1) );
       messagePrint(msg);
       reply(msg); // Toggles the last MUX port to trigger limit switch.
@@ -106,11 +109,20 @@ void receiveEvent(int value){
   }
 }
 void messagePrint(Message msg){
+	/*
   Serial.print("Message: \n");
   Serial.print("Col: "); Serial.print(msg.col);
   Serial.print(" Cell: "); Serial.print(msg.cell);
   Serial.print(" Command: "); Serial.print(msg.command);
   Serial.print("\n");
+  */
+  Serial.print("Message: ");
+  Serial.print(msg.col + 48);
+  Serial.print(msg.cell + 48);
+  for (int i = 0; i < 8; i++){
+	Serial.print(msg.command[i]);
+  }
+  Serial.print('\n');
   return;
 }
 
