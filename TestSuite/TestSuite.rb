@@ -28,7 +28,7 @@ module TestSuite
     port.write(cmd.instruction)
     status = Timeout::timeout(wait){
       while true do 
-        printf("%c", port.getc)
+        printf("%b", port.getc)
       end
     };
     return

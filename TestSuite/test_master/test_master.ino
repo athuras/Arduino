@@ -209,23 +209,23 @@ void writeToFront(byte* message, byte num){
 }
 
 void writeLimitToFront(Message msg){
-	Serial.print('l');
-	Serial.print(msg.col);
-	Serial.print(msg.cell);
-	Serial.print(msg.command[1]);
-	Serial.print(msg.command[2]);
+	Serial.write('l');
+	Serial.write(msg.col);
+	Serial.write(msg.cell);
+	Serial.write(msg.command[1]);
+	Serial.write(msg.command[2]);
 	serialFill(0, 5);
-	Serial.print('\n');
+	Serial.write('\n');
 }
 
 void writeAnalogToFront(Message msg){
-	Serial.print('s');
-	Serial.print(msg.col);
-	Serial.print(msg.cell);
-	Serial.print(msg.command[1]);
-	Serial.print(msg.command[2]);
+	Serial.write('s');
+	Serial.write(msg.col);
+	Serial.write(msg.cell);
+	Serial.write(msg.command[1]);
+	Serial.write(msg.command[2]);
 	serialFill(0, 5);
-	Serial.print('\n');
+	Serial.write('\n');
 }
 
 void writeNewColToFront(Message msg){

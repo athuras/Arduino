@@ -29,7 +29,7 @@ const char *string_table[] = 	   // change "string_table" name to suit
 };
 
 const byte DEFAULT_ADDRESS = 99;
-byte current_address = 5;
+byte current_address = 9;
 const int COMMAND_LENGTH = 12;
 const int RESPONSE_LENGTH = 10;
 const int CMD_BODY_LENGTH = 8;
