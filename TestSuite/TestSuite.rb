@@ -19,16 +19,16 @@ module TestSuite
     stop_bits = 1
     parity = SerialPort::NONE
     sPort = SerialPort.new(port_str, baud_rate, data_bits, stop_bits, parity)
-    return
+    return sPort
   end
   
-  def send(command, wait=5)
+  def send(command, port, wait=2)
     cmd = Instruction.new(command)
     puts "#{command} :: #{cmd.inspect}"
-    sPort.write(cmd)
+    port.write(cmd.instruction)
     status = Timeout::timeout(wait){
       while true do 
-        printf("%c", sPort.getc)
+        printf("%c", port.getc)
       end
     };
     return
@@ -37,31 +37,28 @@ module TestSuite
   class Instruction
     attr_accessor :instruction, :length
     def initialize(text, length = 10)
-      #instruction definitions
+      #instruction definitions Give
       mode = {}; 
       mode['u'], mode['s'], mode['l'], mode['p'] = 'A', 'B', 'C', 'D';
       text = text.split(' ')
+      ins = ""
       begin
-        instruction = ""
-        instruction += mode[text[0]]
-        instruction += format_address( text[1], text[2] )
+        ins.concat( text[0] )
+        ins.concat( text[1] )
+        if mode.has_key?(text[2])
+          ins.concat( mode[text[2]] )
+        else
+          ins.concat("0")
+        end
       rescue 
         @instruction = nil
         puts 'error formatting strings'
       end
-      (length - instruction.length).times do |e|
-        instruction += 0;
+      (length - ins.length).times do |e|
+        ins.concat('0');
       end
-      @instruction = instruction
+      @instruction = ins
       return self
-    end
-    def format_address(*params)
-      out = ""
-      # do somthing
-      params.each do |p|
-        out += p;
-      end
-      return out
     end
   end
      
