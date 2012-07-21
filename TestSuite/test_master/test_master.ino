@@ -14,6 +14,7 @@ const int FRONT_BUFFER = 10;
 const int SLAVE_BUFFER = 10;
 const int RESPONSE_LENGTH = 10;
 const int COMMAND_LENGTH = 10;
+const int CMD_BODY_LENGTH = COMMAND_LENGTH - 2;
 
 /////////////////////////////////////////////////////
 // Buffers and Such
@@ -50,8 +51,7 @@ void loop(){
     byte cell = charNumToByteNum((char)fromFrontBuffer[1]);
     byte command = parseFrontCommand(fromFrontBuffer);
     byte response = 0;
-    Serial.print(col); Serial.println(cell);
-
+    Serial.print(col); Serial.print(" "); Serial.println(cell);
     if (command == 0){ // Unlock
       Serial.println("DEBUG - Unlock . . .");
       Message msg = Message(col, cell, string_table[0]);
@@ -63,15 +63,13 @@ void loop(){
         inLockCycle = true;
         lockedColumn = col;
         lockedCell = cell;
-        Serial.write(0);
       }
       else {
         Serial.print("DEBUG - Error Unlocking\n");
-        Serial.write(1);
       }
     }
     else if (command == 1){ // Query Analog Sensor
-      Serial.print("DEBUG - Sensor Query . . .");
+      Serial.print("DEBUG - Sensor Query . . . \n");
       Message msg = Message(col, cell, string_table[1]);
       messagePrint(msg);
       response = writeToSlave(msg);
@@ -82,8 +80,7 @@ void loop(){
         writeToFront(fromSlaveBuffer, RESPONSE_LENGTH);
       }
       else {
-        Serial.print("DEBUG - Error Qeurying Sensor");
-        Serial.write(1);
+        Serial.print("DEBUG - Error Qeurying Sensor \n");
       }
     }
     else if (command == 2){
@@ -98,12 +95,11 @@ void loop(){
         writeToFront(fromSlaveBuffer, RESPONSE_LENGTH);
       }
       else {
-        Serial.print("DEBUG - Error Querying Limit Switch");
-        Serial.write(1);
+        Serial.print("DEBUG - Error Querying Limit Switch \n");
       }
     }
     else if (command == 3){ // Request Column POST (all limit switches)
-      Serial.print("DEBUG - Case 3");
+      Serial.print("DEBUG - Case 3 \n");
     }
     else {
       Serial.print("DEBUG - Not Valid Switch: ");
@@ -117,20 +113,14 @@ void loop(){
 ////////////////////////////////////////////////////
 // Debug
 void messagePrint(Message msg){
-	/*
-  byte buffer[msg.length()];
-  msg.serialize((char*)buffer, msg.length());
-  for (int i = 0; i < msg.length(); i++){
-    Serial.print(buffer[i]);
-  }
-  Serial.print('\n');
-  return;*/
-  Serial.println(msg.col);
-  Serial.println(msg.cell);
-  for (int i = 0; i < 8; i++){
-	Serial.print(msg.command[i]);
-  }
-  Serial.print('\n');
+	Serial.print("Col: ");	Serial.println(msg.col);
+	Serial.print("Cell: ");	Serial.println(msg.cell);
+	Serial.print("Msg: ");
+	for (int i = 0; i < CMD_BODY_LENGTH; i++){
+		Serial.write(msg.command[i]);
+	}
+	Serial.print('\n');
+
 }
 ////////////////////////////////////////////////////
 
