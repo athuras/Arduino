@@ -65,7 +65,8 @@ void loop(){
         lockedCell = cell;
       }
       else {
-        Serial.print("DEBUG - Error Unlocking\n");
+        Serial.print("DEBUG - Error Unlocking - I2C Resp:");
+		Serial.println(response);
       }
     }
     else if (command == 1){ // Query Analog Sensor
@@ -80,7 +81,8 @@ void loop(){
 		writeAnalogToFront(msg);
       }
       else {
-        Serial.print("DEBUG - Error Qeurying Sensor \n");
+        Serial.print("DEBUG - Error Qeurying Sensor  - I2C Resp: ");
+		Serial.println(response);
       }
     }
     else if (command == 2){
@@ -95,7 +97,8 @@ void loop(){
         writeLimitToFront(msg);
       }
       else {
-        Serial.print("DEBUG - Error Querying Limit Switch \n");
+        Serial.print("DEBUG - Error Querying Limit Switch - I2C Resp: ");
+		Serial.println(response);
       }
     }
     else if (command == 3){ // Request Column POST (all limit switches)
