@@ -19,19 +19,26 @@ module TestSuite
     stop_bits = 1
     parity = SerialPort::NONE
     sPort = SerialPort.new(port_str, baud_rate, data_bits, stop_bits, parity)
+    sPort.read_timeout = 0
     return sPort
   end
   
+  def io(msg, port)
+    s = []
+    port.write(msg.instruction)
+    puts port.read
+  end
+
   def send(command, port, wait=2)
     cmd = Instruction.new(command)
     puts "#{command} :: #{cmd.inspect}"
+    s = [];
     port.write(cmd.instruction)
     status = Timeout::timeout(wait){
       while true do 
-        printf("%b", port.getc)
+        printf("%c", port.getbyte)
       end
     };
-    return
   end
 
   class Instruction
