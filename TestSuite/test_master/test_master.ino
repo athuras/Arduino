@@ -77,7 +77,7 @@ void loop(){
         Serial.print("DEBUG - Analog Value: \n");
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
         messagePrint(msg);
-        writeToFront(fromSlaveBuffer, RESPONSE_LENGTH);
+		writeAnalogToFront(msg);
       }
       else {
         Serial.print("DEBUG - Error Qeurying Sensor \n");
@@ -92,7 +92,7 @@ void loop(){
         Serial.print("DEBUG - Limit Switch Value: \n");
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
         messagePrint(msg);
-        writeToFront(fromSlaveBuffer, RESPONSE_LENGTH);
+        writeLimitToFront(msg);
       }
       else {
         Serial.print("DEBUG - Error Querying Limit Switch \n");
@@ -204,6 +204,32 @@ void writeToFront(byte* message, byte num){
     Serial.write(message[i]);
   }
 }
+
+void writeLimitToFront(Message msg){
+	Serial.print('l');
+	Serial.print(msg.col);
+	Serial.print(msg.cell);
+	Serial.print(msg.command[1]);
+	Serial.print(msg.command[2]);
+	serialFill(0, 5);
+	Serial.print('\n');
+}
+
+void writeAnalogToFront(Message msg){
+	Serial.print('s');
+	Serial.print(msg.col);
+	Serial.print(msg.cell);
+	Serial.print(msg.command[1]);
+	Serial.print(msg.command[2]);
+	serialFill(0, 5);
+	Serial.print('\n');
+}
+
+void writeNewColToFront(Message msg){
+	
+}
+
+
 /* Seems to not like overloading.
 void writeToFront(string k){
   for (byte i = 0; i < k.length(); i++){
@@ -227,4 +253,10 @@ byte parseFrontCommand(byte* command){
     return 3;
   }
   return 4;
+}
+
+void serialFill(byte value, byte fillNum){
+	for (byte i = 0; i < fillNum; i++){
+		Serial.write(value);
+	}	
 }
