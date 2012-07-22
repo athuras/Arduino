@@ -20,8 +20,6 @@ const int CMD_BODY_LENGTH = COMMAND_LENGTH - 2;
 
 /////////////////////////////////////////////////////
 // Buffers and Such
-byte toSlaveBuffer[ SLAVE_BUFFER ];
-byte toFrontBuffer[ FRONT_BUFFER ];
 byte fromSlaveBuffer[ RESPONSE_LENGTH ];
 byte fromFrontBuffer[ FRONT_BUFFER ];
 
@@ -30,13 +28,8 @@ byte fromFrontBuffer[ FRONT_BUFFER ];
 int cycle = 0;
 const int CYCLE_DELAY = 10;
 const int POLL_INTERVAL = 100; // in integer multiples of 10ms cycles
-bool inLockCycle  = false;
-  int lockDelay   = 100;
-  byte lockedColumn = 0;
-  byte lockedCell   = 0;
 bool newColumnFound   = false;
 bool isInputComplete  = false;
-bool isSlaveResponseComplete = false;
 
 // MAIN
 void setup(){
@@ -66,9 +59,7 @@ void loop(){
       if (response == 0){
         Serial.print("DEBUG - Response:\n");
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
-        inLockCycle = true;
-        lockedColumn = col;
-        lockedCell = cell;
+		msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
       }
       else {
         Serial.print("DEBUG - Error Unlocking - I2C Resp:");
@@ -142,8 +133,7 @@ void loop(){
 		} else {
 			Serial.print("DEBUG - Error Querying Cell Size - I2C Resp: ");
 			Serial.println(response);
-		}
-		
+		}	
 	}
 	
 	else if (command == 9){ //helper debug command
@@ -171,7 +161,6 @@ void loop(){
       Serial.print(response); Serial.print('\n');
     }
   }
-
   isInputComplete = false;
   cycle++;
   delay(CYCLE_DELAY);
@@ -222,11 +211,6 @@ void readArrayFromSerial(byte* buffer, byte num, bool isNullTerminated){
   }
 }
 
-byte charNumToByteNum(char c){
-  if (c >= 48 && c <= 57){
-    return (c - 48);
-  }
-}
 /////////////////////////////////////////////////////
 // Communication Methods
 byte writeToSlave(Message msg){
@@ -249,15 +233,8 @@ void requestCallBack(byte column, byte* buffer, byte num){
       cnt++;
     }
     if (cnt == num){
-      isSlaveResponseComplete = true;
       Wire.read();
     }
-  }
-}
-
-void writeToFront(byte* message, byte num){
-  for (byte i = 0; i < num; i++){
-    Serial.write(message[i]);
   }
 }
 
@@ -283,7 +260,7 @@ void writeAnalogToFront(Message msg){
 
 void writeNewColToFront(Message msg){
 	Serial.write('n');
-	Serial.write(msg.col);
+	Serial.write(DEFAULT_ADDRESS);
 	serialFill(0, 8);
 	Serial.write('\n');
 }
@@ -303,8 +280,6 @@ void writeCellTypeToFront(Message msg){
 	serialFill(0,6);
 	Serial.write('\n');
 }
-
-
 
 byte parseByteFrontCommand(byte* command){
   Serial.println((char)command[2]);
@@ -340,18 +315,6 @@ void serialFill(byte value, byte fillNum){
 	for (byte i = 0; i < fillNum; i++){
 		Serial.write(value);
 	}	
-}
-
-void friendlyPrint(byte val){
-	int hundredths = 0;
-	int tenths = 0;
-	int ones = 0;
-	ones = val % 10;
-	tenths = (val - ones) % 100;
-	hundredths = (val - tenths*10 - ones) % 1000;
-	Serial.print(hundredths);
-	Serial.print(tenths);
-	Serial.print(ones);
 }
 
 void scan(){
