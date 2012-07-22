@@ -10,25 +10,25 @@ Message::Message(){
 	memset(this->command, 0, COMMAND_LENGTH);
 }
 
-Message::Message(char col, char cell, char* command)
+Message::Message(byte col, byte cell, byte* command)
 {
 	this-> col = col;
 	this-> cell = cell;
 	memcpy(this->command, command, COMMAND_LENGTH);
 }
 
-Message::Message(char col, char cell, const char* command){
+Message::Message(byte col, byte cell, const byte* command){
 	this-> col = col;
 	this-> cell = cell;
 	memcpy(this->command, command, COMMAND_LENGTH);
 }
 
-Message::Message(char col, char cell, int* command){
+Message::Message(byte col, byte cell, int* command){
 	this->col = col;
 	this->cell = cell;
-	char buffer[COMMAND_LENGTH];
+	byte buffer[COMMAND_LENGTH];
 	for (int i = 0; i < COMMAND_LENGTH; i++){
-		buffer[i] = (char)(command[i]%256);
+		buffer[i] = (byte)(command[i]%256);
 	}
 	memcpy(this->command, buffer, COMMAND_LENGTH);
 }
@@ -41,7 +41,7 @@ int Message::bodyLength(){
 	return COMMAND_LENGTH;
 }
 
-void Message::serialize(char output_array[], int size){
+void Message::serialize(byte output_array[], int size){
 	if (size == OUTPUT_LENGTH){
 		output_array[0] = this->col;
 		output_array[1] = this->cell;
@@ -53,15 +53,15 @@ void Message::serialize(char output_array[], int size){
 	}
 }
 
-char* Message::serialize(){
-	char temp_array[OUTPUT_LENGTH];
+byte* Message::serialize(){
+	byte temp_array[OUTPUT_LENGTH];
 	temp_array[0] = this->col;
 	temp_array[1] = this->cell;
 	memcpy((void*) temp_array[2], (void*) this->command, COMMAND_LENGTH);
 	return temp_array;
 }
 
-void Message::deserialize(char* input_array, int size){
+void Message::deserialize(byte* input_array, int size){
 	this->col = input_array[0];
 	this->cell = input_array[1];
 	for(int i = 0; i < COMMAND_LENGTH; i++){

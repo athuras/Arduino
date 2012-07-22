@@ -3,13 +3,13 @@
 #include <avr/pgmspace.h>
 /////////////////////////////////////////////////////
 // Reference
-const char unlockcode[]   =   {49, 49, 49, 49, 49, 49, 49, 49};
-const char querycode[]    =   {50, 50, 50, 50, 50, 50, 50, 50};
-const char new_addresscode[]  =   {51, 51, 51, 51, 51, 51, 51, 51}; 
-const char limitswitchcode[]  =   {52, 52, 52, 52, 52, 52, 52, 52};
-const char echo[] = {53, 53, 53, 53, 53, 53, 53, 53};
+const byte unlockcode[]   =   {49, 49, 49, 49, 49, 49, 49, 49};
+const byte querycode[]    =   {50, 50, 50, 50, 50, 50, 50, 50};
+const byte new_addresscode[]  =   {51, 51, 51, 51, 51, 51, 51, 51}; 
+const byte limitswitchcode[]  =   {52, 52, 52, 52, 52, 52, 52, 52};
+const byte echo[] = {53, 53, 53, 53, 53, 53, 53, 53};
 
-const char *string_table[] = {unlockcode, querycode, new_addresscode, limitswitchcode, echo};
+const byte *string_table[] = {unlockcode, querycode, new_addresscode, limitswitchcode, echo};
 
 const byte DEFAULT_ADDRESS = 5; // THIS SHOULD NEVER BE SET TO 255
 const int FRONT_BUFFER = 10;
@@ -52,14 +52,11 @@ void loop(){
   }
   if (isInputComplete){
     Serial.println("DEBUG - Shit Just Got Real.");
-//  byte col = charNumToByteNum((char)fromFrontBuffer[0]);
-//  byte cell = charNumToByteNum((char)fromFrontBuffer[1]);
     byte col = fromFrontBuffer[0];
     byte cell = fromFrontBuffer[1];
     byte command = parseByteFrontCommand(fromFrontBuffer);
-    //byte command = parseFrontCommand(fromFrontBuffer);
     byte response = 0;
-    Serial.print(col); Serial.print(" "); Serial.println(cell);
+    Serial.print(col); Serial.print(" "); Serial.print(cell);
 
     if (command == 0){ // Unlock
       Serial.println("DEBUG - Unlock . . .");
@@ -118,7 +115,7 @@ void loop(){
     }
 
     else if (command == 4){ // Reset Address of Specified column. Whereing the cell value is the new address
-      Message msg = Message(col, cell, string_table[2]);
+	  Message msg = Message(col, cell, string_table[2]);
       messagePrint(msg);
       response = writeToSlave(msg);
       if (response == 0){
@@ -172,7 +169,7 @@ void messagePrint(Message msg){
 
 void limitQueryResponse(Message response){
   byte buffer[response.length()];
-  response.serialize((char*)buffer, response.length());
+  response.serialize(buffer, response.length());
   for (int i = 0; i < response.length(); i++){
     Serial.write(buffer[i]);
   }
@@ -218,7 +215,7 @@ byte charNumToByteNum(char c){
 /////////////////////////////////////////////////////
 // Communication Methods
 byte writeToSlave(Message msg){
-  char writeBuffer[COMMAND_LENGTH];
+  //byte writeBuffer[COMMAND_LENGTH];
   //msg.serialize(writeBuffer, COMMAND_LENGTH);
   Wire.beginTransmission(msg.col);
   Wire.write(msg.col);
@@ -286,19 +283,19 @@ void writeToFront(string k){
 byte parseByteFrontCommand(byte* command){
   Serial.println((char)command[2]);
   switch (command[2]) {
-    case 0x00:
+    case 0x00: //unlock
       return 0;
       break;
-    case 0x01:
+    case 0x01: //analog query
       return 1;
       break;
-    case 0x02:
+    case 0x02: //limit query
       return 2;
       break;
-    case 0x03:
+    case 0x03: //column post
       return 3;
       break;
-    case 0x04:
+    case 0x04: //reset to new address
       return 4;
       break;
     default:
@@ -330,4 +327,16 @@ void serialFill(byte value, byte fillNum){
 	for (byte i = 0; i < fillNum; i++){
 		Serial.write(value);
 	}	
+}
+
+void friendlyPrint(byte val){
+	int hundredths = 0;
+	int tenths = 0;
+	int ones = 0;
+	ones = val % 10;
+	tenths = (val - ones) % 100;
+	hundredths = (val - tenths*10 - ones) % 1000;
+	Serial.print(hundredths);
+	Serial.print(tenths);
+	Serial.print(ones);
 }

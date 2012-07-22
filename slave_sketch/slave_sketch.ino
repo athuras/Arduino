@@ -6,11 +6,11 @@
 #include <EEPROM.h>
 
 //set up commands into flash memory
-const char unlockcode[]  =      {49, 49, 49, 49, 49, 49, 49, 49};   // "String 0" etc are strings to store - change to suit.
-const char querycode[]  =       {50, 50, 50, 50, 50, 50, 50, 50};
-const char new_addresscode[]  = {51, 51, 51, 51, 51, 51, 51, 51}; 
-const char limitswitchcode[]  = {52, 52, 52, 52, 52, 52, 52, 52};
-const char echo[]             = {53, 53, 53, 53, 53, 53, 53, 53};
+const byte unlockcode[]  =      {49, 49, 49, 49, 49, 49, 49, 49};   // "String 0" etc are strings to store - change to suit.
+const byte querycode[]  =       {50, 50, 50, 50, 50, 50, 50, 50};
+const byte new_addresscode[]  = {51, 51, 51, 51, 51, 51, 51, 51}; 
+const byte limitswitchcode[]  = {52, 52, 52, 52, 52, 52, 52, 52};
+const byte echo[]             = {53, 53, 53, 53, 53, 53, 53, 53};
 const byte CELL_TYPES[]  =      {1,2,3,4,5,6,7,8,9,10}; // the length of this array relates to how many cells there are.
 
 // Pins are arbitrary, and should be changed depending on the requirements.
@@ -24,7 +24,7 @@ const int decodeControlPins[CONTROL_SIZE - 1] = {1,2,3,4};
 
 const int PULSE_DELAY = 1000;
 
-const char *string_table[] = 	   // change "string_table" name to suit
+const byte *string_table[] = 	   // change "string_table" name to suit
 {   
   unlockcode, querycode, new_addresscode, limitswitchcode, echo
 };
@@ -68,7 +68,7 @@ void loop(){
 }
 
 void receiveEvent(int value){
-  char buffer[COMMAND_LENGTH];
+  byte buffer[COMMAND_LENGTH];
   int cnt = 0;
   received_command.empty();
   while (0 < Wire.available() && cnt < COMMAND_LENGTH){
@@ -178,7 +178,7 @@ Message query(byte cell){
  int reading = LOW;
   if (cell == 0){
     int proxy_cell_count[] = {CELL_COUNT, 0,0,0,0,0,0,0};
-    return Message((char) current_address, 0, proxy_cell_count);
+    return Message(current_address, 0, proxy_cell_count);
      // return the number of consecutaive cells to master. master should then sequentially query each cell.
   } else {
     byte type = CELL_TYPES[cell - 1];
@@ -186,13 +186,13 @@ Message query(byte cell){
     pinMode(MUX_IN, INPUT);
     reading = analogRead(MUX_IN);
 	  byte body[] = {type, highByte(reading), lowByte(reading), 0, 0, 0, 0, 0};
-    return Message((char)current_address, (char)cell, (char*)body);
+    return Message(current_address, cell, body);
   }
 }
 
 void reply(Message msg){
-  char writeBuffer[RESPONSE_LENGTH];
+  byte writeBuffer[RESPONSE_LENGTH];
   msg.serialize(writeBuffer, RESPONSE_LENGTH);
-  Wire.write((byte*)writeBuffer, RESPONSE_LENGTH);
+  Wire.write(writeBuffer, RESPONSE_LENGTH);
   return;
 }
