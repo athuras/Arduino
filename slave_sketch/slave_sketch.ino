@@ -29,8 +29,8 @@ const char *string_table[] = 	   // change "string_table" name to suit
   unlockcode, querycode, new_addresscode, limitswitchcode, echo
 };
 
-const byte DEFAULT_ADDRESS = 0x14; // THIS VALUE MUST NEVER BE SET TO 255.
-byte current_address = 0x14;
+const byte DEFAULT_ADDRESS = 5; // THIS VALUE MUST NEVER BE SET TO 255.
+byte current_address = 5;
 const int COMMAND_LENGTH = 12;
 const int RESPONSE_LENGTH = 10;
 const int CMD_BODY_LENGTH = 8;
@@ -65,7 +65,6 @@ void setup(){
 }
 
 void loop(){
-
 }
 
 void receiveEvent(int value){

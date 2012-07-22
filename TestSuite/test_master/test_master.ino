@@ -11,7 +11,7 @@ const char echo[] = {53, 53, 53, 53, 53, 53, 53, 53};
 
 const char *string_table[] = {unlockcode, querycode, new_addresscode, limitswitchcode, echo};
 
-const byte DEFAULT_ADDRESS = 0x14; // THIS SHOULD NEVER BE SET TO 255
+const byte DEFAULT_ADDRESS = 5; // THIS SHOULD NEVER BE SET TO 255
 const int FRONT_BUFFER = 10;
 const int SLAVE_BUFFER = 10;
 const int RESPONSE_LENGTH = 10;
@@ -138,8 +138,9 @@ void loop(){
     cycle = 0;
     Message msg = Message(DEFAULT_ADDRESS, 0, string_table[4]);
     byte response = writeToSlave(msg);
-    if (response = 0){
+    if (response == 0){
       requestCallBack(DEFAULT_ADDRESS, fromSlaveBuffer, RESPONSE_LENGTH);
+      Serial.println("BURN THE WITCH!");
       // so now the front will KNOW there is a new column, and send the appropriate new address message
     }
     else {
@@ -294,7 +295,10 @@ byte parseFrontCommand(byte* command){
   if ((char)command[2] == 'D'){ // spam query all limit switches
     return 3;
   }
-  return 4;
+  if ((char)command[2] == 'R'){
+    return 4;
+  }
+  return 5;
 }
 
 void serialFill(byte value, byte fillNum){
