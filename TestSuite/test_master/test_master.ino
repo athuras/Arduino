@@ -52,9 +52,12 @@ void loop(){
   }
   if (isInputComplete){
     Serial.println("DEBUG - Shit Just Got Real.");
-    byte col = charNumToByteNum((char)fromFrontBuffer[0]);
-    byte cell = charNumToByteNum((char)fromFrontBuffer[1]);
-    byte command = parseFrontCommand(fromFrontBuffer);
+//  byte col = charNumToByteNum((char)fromFrontBuffer[0]);
+//  byte cell = charNumToByteNum((char)fromFrontBuffer[1]);
+    byte col = fromFrontBuffer[0];
+    byte cell = fromFrontBuffer[1];
+    byte command = parseByteFrontCommand(fromFrontBuffer);
+    //byte command = parseFrontCommand(fromFrontBuffer);
     byte response = 0;
     Serial.print(col); Serial.print(" "); Serial.println(cell);
 
@@ -193,10 +196,10 @@ void readArrayFromSerial(byte* buffer, byte num, bool isNullTerminated){
   }
   while (Serial.available()){
     if (cnt < num){
-      char aux = (char)Serial.read();
+      byte aux = Serial.read();
       buffer[cnt] = aux;
       cnt++;
-      if (isNullTerminated && (char)aux == '\n'){
+      if (isNullTerminated && aux == 0x76){
         isInputComplete = true;
       }
     }
@@ -280,7 +283,29 @@ void writeToFront(string k){
   }
 }
 */
-
+byte parseByteFrontCommand(byte* command){
+  Serial.println((char)command[2]);
+  switch (command[2]) {
+    case 0x00:
+      return 0;
+      break;
+    case 0x01:
+      return 1;
+      break;
+    case 0x02:
+      return 2;
+      break;
+    case 0x03:
+      return 3;
+      break;
+    case 0x04:
+      return 4;
+      break;
+    default:
+      return 5;
+      break;
+  }
+}
 byte parseFrontCommand(byte* command){
   if ((char)command[2] == 'u' || (char)command[2] == 'A'){ // unlock
     return 0;

@@ -30,31 +30,24 @@ module TestSuite
     return s
   end
 
-  def send(command, port, wait=2)
-    cmd = Instruction.new(command)
-    puts "#{command} :: #{cmd.inspect}"
-    s = [];
-    port.write(cmd.instruction)
-    status = Timeout::timeout(wait){
-      while true do 
-        printf("%c", port.getbyte)
-      end
-    };
+  def send(port, instr=[0x00,0x00,0x00], n = 10)
+    (n - instr.size).times do 
+      instr.push(0x00)
+    end
+    instr.each do |e|
+      port.write(e)
+    end
+    #listen(port)
+    return
   end
 
-  class Instruction
-    attr_accessor :instruction, :length
-    def initialize(text, length = 10)
-      #instruction definitions Give
-      mode = {};
-      ins = text.split(' ')
-      (length - ins.length).times do |e|
-        ins.push(0);
+  def listen(x, t = 1)
+    status = Timeout::timeout(t){
+      while true do
+        puts x.read
       end
-      text = text.map{ |e| e.chr }
-      @instruction = text.to_s
-      return self
-    end
+    }
+    return status
   end
-  
+
 end
