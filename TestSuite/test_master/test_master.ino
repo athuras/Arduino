@@ -137,8 +137,6 @@ void loop(){
 			Serial.print("DEBUG - Cell Size Value: \n");
 			requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
 			msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
-			Serial.write(fromSlaveBuffer[0]);
-			Serial.write(fromSlaveBuffer[1]);
 			messagePrint(msg);
 			writeCellTypeToFront(msg);
 		} else {
@@ -242,6 +240,7 @@ byte writeToSlave(Message msg){
 }
 
 void requestCallBack(byte column, byte* buffer, byte num){
+  delay(100);
   Wire.requestFrom(column, num);
   int cnt = 0;
   while (Wire.available()){

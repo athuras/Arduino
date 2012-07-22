@@ -37,7 +37,7 @@ const int COMMAND_LENGTH = 10;
 const int RESPONSE_LENGTH = 10;
 const int CMD_BODY_LENGTH = 8;
 Message received_command = Message(); 
-byte writeBuffer[RESPONSE_LENGTH];
+byte writeBuffer[COMMAND_LENGTH];
 
 void setup(){
   // Resilient Address
@@ -113,10 +113,6 @@ void receiveEvent(int value){
 
 void requestEvent(){
 	Serial.println("Writing to master");
-	for(int i = 0; i < 10; i++){
-		Serial.write(writeBuffer[i]);
-	}
-	Serial.print('\n');
 	Wire.write(writeBuffer, RESPONSE_LENGTH);
 }
 
@@ -222,6 +218,10 @@ Message query(byte cell){
 }
 
 void reply(Message msg){
-  msg.serialize(writeBuffer, RESPONSE_LENGTH);
+	writeBuffer[0] = msg.col;
+	writeBuffer[1] = msg.cell;
+	for (byte i = 0; i < RESPONSE_LENGTH; i++){
+		writeBuffer[i+2] = msg.command[i];
+	}	
   return;
 }
