@@ -84,8 +84,8 @@ void loop(){
       if (response == 0){
         Serial.print("DEBUG - Analog Value: \n");
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
-        messagePrint(msg);
-		    writeAnalogToFront(msg);
+		msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
+		writeAnalogToFront(msg);
       }
       else {
         Serial.print("DEBUG - Error Qeurying Sensor  - I2C Resp: ");
@@ -101,7 +101,7 @@ void loop(){
       if (response == 0){
         Serial.print("DEBUG - Limit Switch Value: \n");
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
-        messagePrint(msg);
+		msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
         writeLimitToFront(msg);
       }
       else {
@@ -114,23 +114,44 @@ void loop(){
       Serial.print("DEBUG - Case 3 \n");
     }
 
-    else if (command == 4){ // Reset Address of Specified column. Whereing the cell value is the new address
+	// Reset Address of Specified column. Whereing the cell value is the new address
+    else if (command == 4){ 
 	  Message msg = Message(col, cell, string_table[2]);
       messagePrint(msg);
       response = writeToSlave(msg);
       if (response == 0){
         Serial.print("DEBUG - New Address Assigned: ");
         Serial.print(cell); Serial.print('\n');
-      }
-	  
-
-      else {
+      } else {
         Serial.println("Shit Went Down, we can only watch now");
       }
     }
-	else if (command == 9){
+	
+	//Request Cell Size
+	else if (command == 5){	
+		Serial.println("DEBUG - Cell Size Query . . .");
+		Message msg = Message(col, cell, string_table[3]);
+		messagePrint(msg);
+		response = writeToSlave(msg);
+		if (response == 0){
+			Serial.print("DEBUG - Cell Size Value: \n");
+			requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
+			msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
+			Serial.write(fromSlaveBuffer[0]);
+			Serial.write(fromSlaveBuffer[1]);
+			messagePrint(msg);
+			writeCellTypeToFront(msg);
+		} else {
+			Serial.print("DEBUG - Error Querying Cell Size - I2C Resp: ");
+			Serial.println(response);
+		}
+		
+	}
+	
+	else if (command == 9){ //helper debug command
 		scan();
 	}
+	
     else {
       Serial.print("DEBUG - Not Valid Switch: ");
       Serial.println(command);
@@ -172,15 +193,6 @@ void messagePrint(Message msg){
 }
 ////////////////////////////////////////////////////
 
-void limitQueryResponse(Message response){
-  byte buffer[response.length()];
-  response.serialize(buffer, response.length());
-  for (int i = 0; i < response.length(); i++){
-    Serial.write(buffer[i]);
-  }
-  Serial.write('\n');
-}
-
 void serialEvent(){
   readByteArrayFromSerial(fromFrontBuffer, FRONT_BUFFER);
 }
@@ -220,15 +232,12 @@ byte charNumToByteNum(char c){
 /////////////////////////////////////////////////////
 // Communication Methods
 byte writeToSlave(Message msg){
-  //byte writeBuffer[COMMAND_LENGTH];
-  //msg.serialize(writeBuffer, COMMAND_LENGTH);
   Wire.beginTransmission(msg.col);
   Wire.write(msg.col);
   Wire.write(msg.cell);
   for (int i = 0; i < 8; i++){
 	Wire.write(msg.command[i]);
   }
-  //Wire.write((byte*)writeBuffer, COMMAND_LENGTH);
   return Wire.endTransmission();
 }
 
@@ -274,17 +283,30 @@ void writeAnalogToFront(Message msg){
 }
 
 void writeNewColToFront(Message msg){
-	
+	Serial.write('n');
+	Serial.write(msg.col);
+	serialFill(0, 8);
+	Serial.write('\n');
+}
+
+void writeNewAddAcknowledgeToFront(Message msg){
+	Serial.write('a');
+	Serial.write(msg.col);
+	serialFill(0,8);
+	Serial.write('\n');
+}
+
+void writeCellTypeToFront(Message msg){
+	Serial.write('t');
+	Serial.write(msg.col);
+	Serial.write(msg.cell);
+	Serial.write(msg.command[0]);
+	serialFill(0,6);
+	Serial.write('\n');
 }
 
 
-/* Seems to not like overloading.
-void writeToFront(string k){
-  for (byte i = 0; i < k.length(); i++){
-    Serial.write(k.charAt(i));
-  }
-}
-*/
+
 byte parseByteFrontCommand(byte* command){
   Serial.println((char)command[2]);
   switch (command[2]) {
@@ -303,32 +325,16 @@ byte parseByteFrontCommand(byte* command){
     case 0x04: //reset to new address
       return 4;
       break;
-	 case 0x09:
-		return 9;
-		break;
+	case 0x05: //return size of cell
+	  return 5;
+	  break;
+	case 0x09:
+      return 9;
+	  break;
     default:
       return 5;
       break;
   }
-}
-byte parseFrontCommand(byte* command){
-  if ((char)command[2] == 'u' || (char)command[2] == 'A'){ // unlock
-    return 0;
-  }
-
-  if ((char)command[2] == 's' || (char)command[2] == 'B'){ // query sensor
-    return 1;
-  }
-  if ((char)command[2] == 'l' || (char)command[2] == 'C'){ // query limit switch
-    return 2;
-  }
-  if ((char)command[2] == 'D'){ // spam query all limit switches
-    return 3;
-  }
-  if ((char)command[2] == 'R'){
-    return 4;
-  }
-  return 5;
 }
 
 void serialFill(byte value, byte fillNum){

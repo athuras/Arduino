@@ -12,6 +12,7 @@ const byte new_addresscode[]  = {51, 51, 51, 51, 51, 51, 51, 51};
 const byte limitswitchcode[]  = {52, 52, 52, 52, 52, 52, 52, 52};
 const byte echo[]             = {53, 53, 53, 53, 53, 53, 53, 53};
 const byte CELL_TYPES[]  =      {1,2,3,4,5,6,7,8,9,10}; // the length of this array relates to how many cells there are.
+const byte CELL_NUM = 			sizeof(CELL_TYPES)/sizeof(byte);
 
 // Pins are arbitrary, and should be changed depending on the requirements.
 
@@ -21,6 +22,7 @@ const int DEC_OUT = 10;
 const int MUX_IN = 6; // must be analog in
 const int muxSelectPins[CONTROL_SIZE] = {1,2,3,4,5}; // the 5th pin is to toggle limit switch
 const int decodeControlPins[CONTROL_SIZE - 1] = {1,2,3,4};
+const byte LIMIT_SELECT_PIN = 4;
 
 const int PULSE_DELAY = 1000;
 
@@ -30,11 +32,12 @@ const byte *string_table[] = 	   // change "string_table" name to suit
 };
 
 const byte DEFAULT_ADDRESS = 5; // THIS VALUE MUST NEVER BE SET TO 255.
-byte current_address = 12;
-const int COMMAND_LENGTH = 12;
+byte current_address = 20;
+const int COMMAND_LENGTH = 10;
 const int RESPONSE_LENGTH = 10;
 const int CMD_BODY_LENGTH = 8;
 Message received_command = Message(); 
+byte writeBuffer[RESPONSE_LENGTH];
 
 void setup(){
   // Resilient Address
@@ -48,6 +51,7 @@ void setup(){
   }
   */
   Wire.onReceive(receiveEvent);
+  Wire.onRequest(requestEvent);
   Wire.begin(current_address);
   Serial.begin(9600);
   while (!Serial){;}
@@ -76,7 +80,7 @@ void receiveEvent(int value){
      buffer[cnt] = Wire.read();
      cnt++;
   }
-  received_command.deserialize(buffer, cnt);
+  received_command.deserialize(buffer, COMMAND_LENGTH);
   Serial.print("Recieved Message\n");
   messagePrint(received_command);
 
@@ -94,24 +98,35 @@ void receiveEvent(int value){
       reply( msg ); // returns status of cell opened
   } else if (memcmp(received_command.command, string_table[1], CMD_BODY_LENGTH) == 0){ // queried by master
 	Serial.println("In analog query");
-      msg = query(received_command.cell);
+      msg = analogQuery(received_command.cell);
       messagePrint(msg);
       reply( msg );
   } else if (memcmp(received_command.command, string_table[2], CMD_BODY_LENGTH) == 0){  // this state shouldn't happen 
   } else if (memcmp(received_command.command, string_table[3], CMD_BODY_LENGTH) == 0){  //query limit switch
     // query limit switch status.
 	Serial.println("In limit switch query");
-    msg = query( (int)received_command.cell + pow(2,CONTROL_SIZE-1) );
+    msg = limitQuery(received_command.cell);
     messagePrint(msg);
-    reply(msg); // Toggles the last MUX port to trigger limit switch.
+    reply(msg); 
   }
 }
+
+void requestEvent(){
+	Serial.println("Writing to master");
+	for(int i = 0; i < 10; i++){
+		Serial.write(writeBuffer[i]);
+	}
+	Serial.print('\n');
+	Wire.write(writeBuffer, RESPONSE_LENGTH);
+}
+
+
 void messagePrint(Message msg){
   Serial.print("Message: ");
-  Serial.print(msg.col + 48);
-  Serial.print(msg.cell + 48);
+  Serial.write(msg.col);
+  Serial.write(msg.cell);
   for (int i = 0; i < 8; i++){
-	Serial.print(msg.command[i]);
+	Serial.write(msg.command[i]);
   }
   Serial.print('\n');
   return;
@@ -119,17 +134,16 @@ void messagePrint(Message msg){
 
 // One-based. i.e. muxSelect( 1 ) selects the first (zeroith) mux in.
 void muxSelect(int id){ 
- int aux = id - 1;
- for ( int k = CONTROL_SIZE - 1; k >= 0; k--){
-    int a = aux % (int) pow(2,k);
-    if ( a == aux ){
-      digitalWrite(muxSelectPins[k], LOW);
-    }
-    else {
-      digitalWrite(muxSelectPins[k], HIGH);
-      aux = aux - a;
-    }
- }
+	int aux = id -1;
+	for (int k = CONTROL_SIZE - 1; k >= 0; k--){
+		int size = (int) pow( (double)2, (double)k);
+		if (aux >= size){
+			digitalWrite(muxSelectPins[k], HIGH);
+			aux -= size;
+		} else {
+			digitalWrite(muxSelectPins[k], LOW);
+		}
+	}
  return;
 }
 // Again, one-based. decSelect(1) selects the first (zeroith) dec out.
@@ -176,6 +190,16 @@ void unlock(byte cell){
   return;
 }
 
+Message limitQuery(byte cell){
+	digitalWrite(muxSelectPins[LIMIT_SELECT_PIN], HIGH);
+	return query(cell);
+}
+
+Message analogQuery(byte cell){
+	digitalWrite(muxSelectPins[LIMIT_SELECT_PIN], LOW);
+	return query(cell);
+}
+
 Message query(byte cell){
  int reading = LOW;
   if (cell == 0){
@@ -183,18 +207,21 @@ Message query(byte cell){
     return Message(current_address, 0, proxy_cell_count);
      // return the number of consecutaive cells to master. master should then sequentially query each cell.
   } else {
-    byte type = CELL_TYPES[cell - 1];
-    muxSelect( (int) cell );
-    pinMode(MUX_IN, INPUT);
-    reading = analogRead(MUX_IN);
-	  byte body[] = {type, highByte(reading), lowByte(reading), 0, 0, 0, 0, 0};
-    return Message(current_address, cell, body);
+	if (cell >= CELL_NUM){
+		byte body[] = {0,0,0,0,0,0,0,0};
+		return Message(current_address, cell, body);
+	} else if (cell < CELL_NUM){
+		byte type = CELL_TYPES[cell - 1];
+		muxSelect( (int) cell );
+		pinMode(MUX_IN, INPUT);
+		reading = analogRead(MUX_IN);
+		  byte body[] = {type, highByte(reading), lowByte(reading), 0, 0, 0, 0, 0};
+		return Message(current_address, cell, body);
+	}
   }
 }
 
 void reply(Message msg){
-  byte writeBuffer[RESPONSE_LENGTH];
   msg.serialize(writeBuffer, RESPONSE_LENGTH);
-  Wire.write(writeBuffer, RESPONSE_LENGTH);
   return;
 }
