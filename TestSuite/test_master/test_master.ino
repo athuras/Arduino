@@ -122,10 +122,15 @@ void loop(){
         Serial.print("DEBUG - New Address Assigned: ");
         Serial.print(cell); Serial.print('\n');
       }
+	  
+
       else {
         Serial.println("Shit Went Down, we can only watch now");
       }
     }
+	else if (command == 9){
+		scan();
+	}
     else {
       Serial.print("DEBUG - Not Valid Switch: ");
       Serial.println(command);
@@ -298,6 +303,9 @@ byte parseByteFrontCommand(byte* command){
     case 0x04: //reset to new address
       return 4;
       break;
+	 case 0x09:
+		return 9;
+		break;
     default:
       return 5;
       break;
@@ -339,4 +347,16 @@ void friendlyPrint(byte val){
 	Serial.print(hundredths);
 	Serial.print(tenths);
 	Serial.print(ones);
+}
+
+void scan(){
+	for (byte i = 1; i < 127; i++){
+		Message msg = Message(i, 1, string_table[4]);
+		byte response = writeToSlave(msg);
+			Serial.print("At: ");
+			Serial.print(i);
+			Serial.print(" ");
+			Serial.print(response);
+			Serial.print('\n');
+	}
 }

@@ -30,7 +30,7 @@ const byte *string_table[] = 	   // change "string_table" name to suit
 };
 
 const byte DEFAULT_ADDRESS = 5; // THIS VALUE MUST NEVER BE SET TO 255.
-byte current_address = 5;
+byte current_address = 12;
 const int COMMAND_LENGTH = 12;
 const int RESPONSE_LENGTH = 10;
 const int CMD_BODY_LENGTH = 8;
@@ -38,6 +38,7 @@ Message received_command = Message();
 
 void setup(){
   // Resilient Address
+  /*
   byte storage = EEPROM.read(0);
   if (storage == 255 || storage == DEFAULT_ADDRESS){
     current_address = DEFAULT_ADDRESS;
@@ -45,12 +46,12 @@ void setup(){
   else {
     current_address = storage;
   }
-  
-  Wire.begin(current_address);
+  */
   Wire.onReceive(receiveEvent);
+  Wire.begin(current_address);
   Serial.begin(9600);
   while (!Serial){;}
-  Serial.println(storage);
+  //Serial.println(storage);
   pinMode(MUX_IN, INPUT);
   pinMode(DEC_OUT, OUTPUT);
   for ( int i = 0; i < CONTROL_SIZE - 1; i++){
@@ -84,7 +85,7 @@ void receiveEvent(int value){
    reply(received_command); 
    Serial.println("Recieved Echo Request");
   } else if (memcmp(received_command.command, string_table[2], CMD_BODY_LENGTH) == 0){ // reset address code sent
-    resetAddress(received_command.command[COMMAND_LENGTH-1]);
+    resetAddress(received_command.cell);
   } else if (memcmp(received_command.command, string_table[0], CMD_BODY_LENGTH) == 0){ // unlock code sent
 	Serial.println("In unlock");
       unlock(received_command.cell);
@@ -157,8 +158,9 @@ void pulse(int pin){
 }
 
 void resetAddress(byte address){
-  EEPROM.write(0, address); 
+  //EEPROM.write(0, address); 
   current_address = address;
+  Wire.onReceive(receiveEvent);
   Wire.begin(address);
   return;
 }
