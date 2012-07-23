@@ -17,7 +17,7 @@ const int SLAVE_BUFFER = 10;
 const int RESPONSE_LENGTH = 10;
 const int COMMAND_LENGTH = 10;
 const int CMD_BODY_LENGTH = COMMAND_LENGTH - 2;
-const bool DEBUG = false;
+const bool DEBUG = true;
 
 /////////////////////////////////////////////////////
 // Buffers and Such
@@ -44,8 +44,8 @@ void loop(){
   
   if (isInputComplete){
     if (DEBUG) {Serial.println("DEBUG - Shit Just Got Real.");}
-    byte col = fromFrontBuffer[0];
-    byte cell = fromFrontBuffer[1];
+    byte col = fromFrontBuffer[1];
+    byte cell = fromFrontBuffer[2];
     byte command = parseByteFrontCommand(fromFrontBuffer);
     byte response = 0;
 
@@ -182,6 +182,7 @@ void loop(){
     byte response = writeToSlave(msg);
 	if (DEBUG) {Serial.print(response);}
     if (response == 0){
+	  if (DEBUG) {Serial.println("BURN THE WITCH");}
       requestCallBack(DEFAULT_ADDRESS, fromSlaveBuffer, RESPONSE_LENGTH);
 	  msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
 	  writeNewColToFront(msg);
@@ -335,7 +336,7 @@ bool isDoorClosed(Message msg){
 }
 
 byte parseByteFrontCommand(byte* command){
-	byte c = command[2];
+	byte c = command[0];
 	if (c == 'U' || c == 0){	//unlock
 		return 0;
 	} else if (c == 'S' || c == 1){	//analog query
