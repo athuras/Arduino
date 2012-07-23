@@ -19,7 +19,7 @@ const byte CELL_NUM = 			sizeof(CELL_TYPES)/sizeof(byte);
 const int CELL_COUNT = 10;
 const int CONTROL_SIZE = 4 + 1; // the last '1' is for the limit switch
 const int DEC_OUT = 10;
-const int MUX_IN = 6; // must be analog in
+const int MUX_IN = A0; // must be analog in
 const int muxSelectPins[CONTROL_SIZE] = {1,2,3,4,5}; // the 5th pin is to toggle limit switch
 const int decodeControlPins[CONTROL_SIZE - 1] = {1,2,3,4};
 const byte LIMIT_SELECT_PIN = 4;
@@ -32,7 +32,7 @@ const byte *string_table[] = 	   // change "string_table" name to suit
 };
 
 const byte DEFAULT_ADDRESS = 5; // THIS VALUE MUST NEVER BE SET TO 255.
-byte current_address = 20;
+byte current_address = 5;
 const int COMMAND_LENGTH = 10;
 const int RESPONSE_LENGTH = 10;
 const int CMD_BODY_LENGTH = 8;
@@ -86,14 +86,16 @@ void receiveEvent(int value){
 
   Message msg = Message();
   if (memcmp(received_command.command, string_table[4], CMD_BODY_LENGTH) == 0){ // echo requested
-   reply(received_command); 
+	byte body[8] = {CELL_NUM, 0,0,0,0,0,0,0};
+	Message msg = Message(current_address, 0, body);	
+    reply(msg); 
    Serial.println("Recieved Echo Request");
   } else if (memcmp(received_command.command, string_table[2], CMD_BODY_LENGTH) == 0){ // reset address code sent
     resetAddress(received_command.cell);
   } else if (memcmp(received_command.command, string_table[0], CMD_BODY_LENGTH) == 0){ // unlock code sent
 	Serial.println("In unlock");
       unlock(received_command.cell);
-      msg = query( (int)received_command.cell);
+      msg = limitQuery( (int)received_command.cell);
       messagePrint(msg);
       reply( msg ); // returns status of cell opened
   } else if (memcmp(received_command.command, string_table[1], CMD_BODY_LENGTH) == 0){ // queried by master
@@ -113,6 +115,9 @@ void receiveEvent(int value){
 
 void requestEvent(){
 	Serial.println("Writing to master");
+	for (int i = 0; i < RESPONSE_LENGTH; i++){
+		Serial.write(writeBuffer[i]);
+	}
 	Wire.write(writeBuffer, RESPONSE_LENGTH);
 }
 

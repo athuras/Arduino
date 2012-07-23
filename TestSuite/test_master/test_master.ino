@@ -40,16 +40,13 @@ void setup(){
 
 void loop(){
   serialEvent();
-  if (newColumnFound){
-  // hook a brother up.
-  }
+  
   if (isInputComplete){
     Serial.println("DEBUG - Shit Just Got Real.");
     byte col = fromFrontBuffer[0];
     byte cell = fromFrontBuffer[1];
     byte command = parseByteFrontCommand(fromFrontBuffer);
     byte response = 0;
-    Serial.print(col); Serial.print(" "); Serial.print(cell);
 
     if (command == 0){ // Unlock
       Serial.println("DEBUG - Unlock . . .");
@@ -60,6 +57,22 @@ void loop(){
         Serial.print("DEBUG - Response:\n");
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
 		msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
+		delay(50); //let the door open
+		bool doorClosed = false;
+		
+		//unlock cycle, keeps trying to get state of the box to determine when the door closes
+		while(!doorClosed){
+			msg = Message(col, cell, string_table[3]);
+			response = writeToSlave(msg);
+			if (response == 0){
+				requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
+				msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
+				doorClosed = isDoorClosed(msg);
+				writeLimitToFront(msg);
+			} else {
+				//fucking terrible error state
+			}
+		}
       }
       else {
         Serial.print("DEBUG - Error Unlocking - I2C Resp:");
@@ -139,9 +152,8 @@ void loop(){
 	else if (command == 9){ //helper debug command
 		scan();
 	}
-	
     else {
-      Serial.print("DEBUG - Not Valid Switch: ");
+      Serial.print("DEBUG - Not Valid Command: ");
       Serial.println(command);
     }
   }
@@ -152,14 +164,17 @@ void loop(){
     cycle = 0;
     Message msg = Message(DEFAULT_ADDRESS, 0, string_table[4]);
     byte response = writeToSlave(msg);
+	Serial.print(response);
     if (response == 0){
       requestCallBack(DEFAULT_ADDRESS, fromSlaveBuffer, RESPONSE_LENGTH);
-      Serial.println("BURN THE WITCH!");
+	  msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
+	  writeNewColToFront(msg);
+	  
       // so now the front will KNOW there is a new column, and send the appropriate new address message
     }
     else {
-      Serial.print(response); Serial.print('\n');
     }
+	Serial.print('\n');
   }
   isInputComplete = false;
   cycle++;
@@ -176,7 +191,6 @@ void messagePrint(Message msg){
 		Serial.write(msg.command[i]);
 	}
 	Serial.print('\n');
-
 }
 ////////////////////////////////////////////////////
 
@@ -261,7 +275,8 @@ void writeAnalogToFront(Message msg){
 void writeNewColToFront(Message msg){
 	Serial.write('n');
 	Serial.write(DEFAULT_ADDRESS);
-	serialFill(0, 8);
+	Serial.write(msg.command[0]);
+	serialFill(0, 7);
 	Serial.write('\n');
 }
 
@@ -281,34 +296,44 @@ void writeCellTypeToFront(Message msg){
 	Serial.write('\n');
 }
 
+bool isDoorClosed(Message msg){
+	//if active low
+	//int val = word(msg.command[1], msg.command[2]);
+	if (word(msg.command[1], msg.command[2]) < 100){
+		//Serial.println("Door closed");
+		return true;
+	}
+	//Serial.println("Door open");
+	return false;
+	
+	/*
+	For active high case
+	if (word(msg.command[1], msg.command[2]) > 900){
+		return true
+	}
+	return false;	
+	*/
+}
+
 byte parseByteFrontCommand(byte* command){
-  Serial.println((char)command[2]);
-  switch (command[2]) {
-    case 0x00: //unlock
-      return 0;
-      break;
-    case 0x01: //analog query
-      return 1;
-      break;
-    case 0x02: //limit query
-      return 2;
-      break;
-    case 0x03: //column post
-      return 3;
-      break;
-    case 0x04: //reset to new address
-      return 4;
-      break;
-	case 0x05: //return size of cell
-	  return 5;
-	  break;
-	case 0x09:
-      return 9;
-	  break;
-    default:
-      return 5;
-      break;
-  }
+	byte c = command[2];
+	if (c == 'U' || c == 0){	//unlock
+		return 0;
+	} else if (c == 'S' || c == 1){	//analog query
+		return 1;
+	} else if (c == 'L' || c == 2){	//limit switch query
+		return 2;
+	} else if (c == 'N' || c == 3){	//column post
+		return 3;
+	} else if (c == 'A' || c == 4){	//set new address
+		return 4;
+	} else if (c == 'T' || c == 5){	//cell size
+		return 5;
+	} else if (c == 9){	//helper scan function, remove in future
+		return 9;
+	} else {	//default
+		return 6;
+	}
 }
 
 void serialFill(byte value, byte fillNum){
