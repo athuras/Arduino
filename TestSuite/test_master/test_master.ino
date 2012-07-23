@@ -17,6 +17,7 @@ const int SLAVE_BUFFER = 10;
 const int RESPONSE_LENGTH = 10;
 const int COMMAND_LENGTH = 10;
 const int CMD_BODY_LENGTH = COMMAND_LENGTH - 2;
+const bool DEBUG = false;
 
 /////////////////////////////////////////////////////
 // Buffers and Such
@@ -42,19 +43,19 @@ void loop(){
   serialEvent();
   
   if (isInputComplete){
-    Serial.println("DEBUG - Shit Just Got Real.");
+    if (DEBUG) {Serial.println("DEBUG - Shit Just Got Real.");}
     byte col = fromFrontBuffer[0];
     byte cell = fromFrontBuffer[1];
     byte command = parseByteFrontCommand(fromFrontBuffer);
     byte response = 0;
 
     if (command == 0){ // Unlock
-      Serial.println("DEBUG - Unlock . . .");
+      if (DEBUG) { Serial.println("DEBUG - Unlock . . ."); }
       Message msg = Message(col, cell, string_table[0]);
       messagePrint(msg);
       response = writeToSlave(msg); // anticipate block here
       if (response == 0){
-        Serial.print("DEBUG - Response:\n");
+        if (DEBUG) { Serial.print("DEBUG - Response:\n"); }
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
 		msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
 		delay(50); //let the door open
@@ -75,47 +76,53 @@ void loop(){
 		}
       }
       else {
-        Serial.print("DEBUG - Error Unlocking - I2C Resp:");
+        if (DEBUG) {
+			Serial.print("DEBUG - Error Unlocking - I2C Resp:");
 		    Serial.println(response);
+		}
       }
     }
 
     else if (command == 1){ // Query Analog Sensor
-      Serial.print("DEBUG - Sensor Query . . . \n");
+      if (DEBUG) { Serial.print("DEBUG - Sensor Query . . . \n");}
       Message msg = Message(col, cell, string_table[1]);
       messagePrint(msg);
       response = writeToSlave(msg);
       if (response == 0){
-        Serial.print("DEBUG - Analog Value: \n");
+        if (DEBUG) { Serial.print("DEBUG - Analog Value: \n"); }
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
 		msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
 		writeAnalogToFront(msg);
       }
       else {
-        Serial.print("DEBUG - Error Qeurying Sensor  - I2C Resp: ");
+	    if (DEBUG){
+			Serial.print("DEBUG - Error Qeurying Sensor  - I2C Resp: ");
 		    Serial.println(response);
+		}
       }
     }
 
     else if (command == 2){ // Query Limit Switch
-      Serial.print("DEBUG - Limit Switch Query . . .");
+      if (DEBUG) {Serial.print("DEBUG - Limit Switch Query . . ."); }
       Message msg = Message(col, cell, string_table[3]);
       messagePrint(msg);
       response = writeToSlave(msg);
       if (response == 0){
-        Serial.print("DEBUG - Limit Switch Value: \n");
+        if (DEBUG) {Serial.print("DEBUG - Limit Switch Value: \n");}
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
 		msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
         writeLimitToFront(msg);
       }
       else {
-        Serial.print("DEBUG - Error Querying Limit Switch - I2C Resp: ");
+		if (DEBUG){
+			Serial.print("DEBUG - Error Querying Limit Switch - I2C Resp: ");
     		Serial.println(response);
+		}
       }
     }
 
     else if (command == 3){ // Request Column POST (all limit switches) //probably not used
-      Serial.print("DEBUG - Case 3 \n");
+      if (DEBUG) {Serial.print("DEBUG - Case 3 \n");}
     }
 
 	// Reset Address of Specified column. Whereing the cell value is the new address
@@ -124,28 +131,35 @@ void loop(){
       messagePrint(msg);
       response = writeToSlave(msg);
       if (response == 0){
-        Serial.print("DEBUG - New Address Assigned: ");
-        Serial.print(cell); Serial.print('\n');
+		requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
+		msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
+		writeNewAddAcknowledgeToFront(msg);
+        if (DEBUG) {
+			Serial.print("DEBUG - New Address Assigned: ");
+			Serial.print(cell); Serial.print('\n');
+		}
       } else {
-        Serial.println("Shit Went Down, we can only watch now");
+	    if (DEBUG){ Serial.println("Shit Went Down, we can only watch now"); }
       }
     }
 	
 	//Request Cell Size
 	else if (command == 5){	
-		Serial.println("DEBUG - Cell Size Query . . .");
+		if (DEBUG){ Serial.println("DEBUG - Cell Size Query . . .");}
 		Message msg = Message(col, cell, string_table[3]);
 		messagePrint(msg);
 		response = writeToSlave(msg);
 		if (response == 0){
-			Serial.print("DEBUG - Cell Size Value: \n");
+			if (DEBUG) {Serial.print("DEBUG - Cell Size Value: \n");}
 			requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
 			msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
 			messagePrint(msg);
 			writeCellTypeToFront(msg);
 		} else {
-			Serial.print("DEBUG - Error Querying Cell Size - I2C Resp: ");
-			Serial.println(response);
+			if (DEBUG){
+				Serial.print("DEBUG - Error Querying Cell Size - I2C Resp: ");
+				Serial.println(response);
+			}
 		}	
 	}
 	
@@ -153,18 +167,20 @@ void loop(){
 		scan();
 	}
     else {
-      Serial.print("DEBUG - Not Valid Command: ");
-      Serial.println(command);
+		if (DEBUG){
+			Serial.print("DEBUG - Not Valid Command: ");
+		Serial.println(command);
+		}
     }
   }
 
   // Periodic Default Address echo request.
   if (cycle == POLL_INTERVAL){
-    Serial.print("Poll DEFAULT: ");
+    if (DEBUG) {Serial.print("Poll DEFAULT: ");}
     cycle = 0;
     Message msg = Message(DEFAULT_ADDRESS, 0, string_table[4]);
     byte response = writeToSlave(msg);
-	Serial.print(response);
+	if (DEBUG) {Serial.print(response);}
     if (response == 0){
       requestCallBack(DEFAULT_ADDRESS, fromSlaveBuffer, RESPONSE_LENGTH);
 	  msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
@@ -174,7 +190,7 @@ void loop(){
     }
     else {
     }
-	Serial.print('\n');
+	if (DEBUG) {Serial.print('\n');}
   }
   isInputComplete = false;
   cycle++;
@@ -184,13 +200,15 @@ void loop(){
 ////////////////////////////////////////////////////
 // Debug
 void messagePrint(Message msg){
-	Serial.print("Col: ");	Serial.println(msg.col);
-	Serial.print("Cell: ");	Serial.println(msg.cell);
-	Serial.print("Msg: ");
-	for (int i = 0; i < CMD_BODY_LENGTH; i++){
-		Serial.write(msg.command[i]);
+	if (DEBUG){
+		Serial.print("Col: ");	Serial.println(msg.col);
+		Serial.print("Cell: ");	Serial.println(msg.cell);
+		Serial.print("Msg: ");
+		for (int i = 0; i < CMD_BODY_LENGTH; i++){
+			Serial.write(msg.command[i]);
+		}
+		Serial.print('\n');	
 	}
-	Serial.print('\n');
 }
 ////////////////////////////////////////////////////
 
@@ -207,7 +225,7 @@ void readCharArrayFromSerial(byte* buffer, byte num){
 void readArrayFromSerial(byte* buffer, byte num, bool isNullTerminated){
   int cnt = 0;
   if (Serial.available()){
-    Serial.println("Reading . . .");
+    if (DEBUG){ Serial.println("Reading . . .");}
   }
   while (Serial.available()){
     if (cnt < num){
@@ -283,7 +301,9 @@ void writeNewColToFront(Message msg){
 void writeNewAddAcknowledgeToFront(Message msg){
 	Serial.write('a');
 	Serial.write(msg.col);
-	serialFill(0,8);
+	Serial.write(msg.cell);
+	Serial.write(msg.command[0]);
+	serialFill(0,7);
 	Serial.write('\n');
 }
 
@@ -298,12 +318,11 @@ void writeCellTypeToFront(Message msg){
 
 bool isDoorClosed(Message msg){
 	//if active low
-	//int val = word(msg.command[1], msg.command[2]);
 	if (word(msg.command[1], msg.command[2]) < 100){
-		//Serial.println("Door closed");
+		if (DEBUG) { Serial.println("Door closed");}
 		return true;
 	}
-	//Serial.println("Door open");
+	 if (DEBUG) { Serial.println("Door open"); }
 	return false;
 	
 	/*

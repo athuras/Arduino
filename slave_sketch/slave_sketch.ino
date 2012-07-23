@@ -91,7 +91,10 @@ void receiveEvent(int value){
     reply(msg); 
    Serial.println("Recieved Echo Request");
   } else if (memcmp(received_command.command, string_table[2], CMD_BODY_LENGTH) == 0){ // reset address code sent
-    resetAddress(received_command.cell);
+	  resetAddress(received_command.cell);
+	  byte body[8] = {0,0,0,0,0,0,0,0};
+	  msg = Message(current_address, 0, body);
+	  reply(msg);
   } else if (memcmp(received_command.command, string_table[0], CMD_BODY_LENGTH) == 0){ // unlock code sent
 	Serial.println("In unlock");
       unlock(received_command.cell);
