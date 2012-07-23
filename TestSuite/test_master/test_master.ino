@@ -17,7 +17,7 @@ const int SLAVE_BUFFER = 10;
 const int RESPONSE_LENGTH = 10;
 const int COMMAND_LENGTH = 10;
 const int CMD_BODY_LENGTH = COMMAND_LENGTH - 2;
-const bool DEBUG = true;
+const bool DEBUG = false;
 
 /////////////////////////////////////////////////////
 // Buffers and Such
@@ -31,12 +31,14 @@ const int CYCLE_DELAY = 10;
 const int POLL_INTERVAL = 100; // in integer multiples of 10ms cycles
 bool newColumnFound   = false;
 bool isInputComplete  = false;
+bool ledon = false;
 
 // MAIN
 void setup(){
   Serial.begin(9600);
   while (!Serial){;} // Apparently needed for Serial on Leonardo
   Wire.begin();
+  pinMode(13, OUTPUT);
 }
 
 void loop(){
@@ -224,24 +226,15 @@ void readCharArrayFromSerial(byte* buffer, byte num){
 }
 
 void readArrayFromSerial(byte* buffer, byte num, bool isNullTerminated){
-  int cnt = 0;
   if (Serial.available()){
     if (DEBUG){ Serial.println("Reading . . .");}
   }
-  while (Serial.available()){
-    if (cnt < num){
-      byte aux = Serial.read();
-      buffer[cnt] = aux;
-      cnt++;
-      if (isNullTerminated && aux == 0x76){
-        isInputComplete = true;
-      }
+  if (Serial.available() >= 10){    Serial.readBytes((char*)buffer, 10);
+    while (Serial.available()){
+     Serial.read(); 
     }
-    if (cnt == num){
-      isInputComplete = true;
-      Serial.read();
-    }
-  }
+    isInputComplete = true;
+  }  
 }
 
 /////////////////////////////////////////////////////
