@@ -74,6 +74,7 @@ void loop(){
 				writeLimitToFront(msg);
 			} else {
 				//fucking terrible error state
+        Serial.println("All hope is lost");
 			}
 		}
       }
@@ -91,16 +92,18 @@ void loop(){
       messagePrint(msg);
       response = writeToSlave(msg);
       if (response == 0){
-        if (DEBUG) { Serial.print("DEBUG - Analog Value: \n"); }
+        if (DEBUG){
+          Serial.print("DEBUG - Analog Value: \n"); 
+        }
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
-		msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
-		writeAnalogToFront(msg);
+	      msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
+		    writeAnalogToFront(msg);
       }
       else {
-	    if (DEBUG){
-			Serial.print("DEBUG - Error Qeurying Sensor  - I2C Resp: ");
-		    Serial.println(response);
-		}
+	      if (DEBUG){
+			    Serial.print("DEBUG - Error Qeurying Sensor  - I2C Resp: ");
+		      Serial.println(response);
+	  	  }
       }
     }
 
@@ -111,20 +114,22 @@ void loop(){
       response = writeToSlave(msg);
       if (response == 0){
         if (DEBUG) {Serial.print("DEBUG - Limit Switch Value: \n");}
-        requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
-		msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
-        writeLimitToFront(msg);
-      }
+          requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
+		      msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
+          writeLimitToFront(msg);
+        }
       else {
-		if (DEBUG){
-			Serial.print("DEBUG - Error Querying Limit Switch - I2C Resp: ");
-    		Serial.println(response);
-		}
+  	    if (DEBUG){
+			    Serial.print("DEBUG - Error Querying Limit Switch - I2C Resp: ");
+    	    Serial.println(response);
+		    }
       }
     }
 
     else if (command == 3){ // Request Column POST (all limit switches) //probably not used
-      if (DEBUG) {Serial.print("DEBUG - Case 3 \n");}
+      if (DEBUG){
+        Serial.print("DEBUG - Case 3 \n");
+      }
     }
 
 	// Reset Address of Specified column. Whereing the cell value is the new address
@@ -133,15 +138,17 @@ void loop(){
       messagePrint(msg);
       response = writeToSlave(msg);
       if (response == 0){
-		requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
-		msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
-		writeNewAddAcknowledgeToFront(msg);
+		    requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
+		    msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
+		    writeNewAddAcknowledgeToFront(msg);
         if (DEBUG) {
-			Serial.print("DEBUG - New Address Assigned: ");
-			Serial.print(cell); Serial.print('\n');
-		}
+			    Serial.print("DEBUG - New Address Assigned: ");
+			    Serial.print(cell); Serial.print('\n');
+		    }
       } else {
-	    if (DEBUG){ Serial.println("Shit Went Down, we can only watch now"); }
+	      if (DEBUG){
+          Serial.println("Shit Went Down, we can only watch now"); 
+        }
       }
     }
 	
@@ -169,10 +176,10 @@ void loop(){
 		scan();
 	}
     else {
-		if (DEBUG){
-			Serial.print("DEBUG - Not Valid Command: ");
-		Serial.println(command);
-		}
+		  if (DEBUG){
+			  Serial.print("DEBUG - Not Valid Command: ");
+		    Serial.println(command);
+		  }
     }
   }
 
@@ -184,16 +191,16 @@ void loop(){
     byte response = writeToSlave(msg);
 	if (DEBUG) {Serial.print(response);}
     if (response == 0){
-	  if (DEBUG) {Serial.println("BURN THE WITCH");}
-      requestCallBack(DEFAULT_ADDRESS, fromSlaveBuffer, RESPONSE_LENGTH);
-	  msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
-	  writeNewColToFront(msg);
-	  
+	    if (DEBUG) {Serial.println("BURN THE WITCH");}
+        requestCallBack(DEFAULT_ADDRESS, fromSlaveBuffer, RESPONSE_LENGTH);
+	      msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
+	      writeNewColToFront(msg);
       // so now the front will KNOW there is a new column, and send the appropriate new address message
     }
     else {
     }
-	if (DEBUG) {Serial.print('\n');}
+	if (DEBUG) {
+    Serial.print('\n');}
   }
   isInputComplete = false;
   cycle++;
