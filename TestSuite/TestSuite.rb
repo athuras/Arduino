@@ -1,9 +1,9 @@
-#!/usr/bin/env ruby
 # Intended to be used with irb to streamline serial testing of microcontroller network
 #
 # in irb, require TestSuite.rb include TestSuite
 # generate a new Instruction message and send it via:
 # =>send("u 24 4") # unlock column 24, cell 4
+# This may not work with 'tricked out slave'
 
 module TestSuite
 
@@ -12,9 +12,9 @@ module TestSuite
   require 'timeout'
 
   # Serial Port Parameters
-  def init(port = '/dev/cu.usbmodem411')
+  def init(port = '/dev/cu.usbmodem411', baud = 9600)
     port_str = port
-    baud_rate = 9600
+    baud_rate = baud
     data_bits = 8
     stop_bits = 1
     parity = SerialPort::NONE
@@ -22,8 +22,8 @@ module TestSuite
     sPort.read_timeout = 0
     return sPort
   end
-  
-  def io(msg, port)
+
+  def io(msg, port) # Sends a message object down the port, and reads the response
     s = []
     port.write(msg.instruction)
     s.push(port.read)
@@ -31,13 +31,13 @@ module TestSuite
   end
 
   def send(port, instr=[0x00,0x00,0x00], n = 10)
-    (n - instr.size).times do 
+    (n - instr.size).times do
       instr.push(0x00)
     end
     instr.each do |e|
       port.write(e)
     end
-    #listen(port)
+    listen(port,2)
     return
   end
 
