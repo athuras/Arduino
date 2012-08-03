@@ -5,6 +5,8 @@
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
 
+//uncomment the line below to enable debug
+//#define DEBUG
 #ifdef DEBUG
 	#define DEBUG_PRINT(x) 		Serial.print(x)
 	#define DEBUG_PRINTLN(x) 	Serial.println(x)
@@ -25,15 +27,15 @@ const byte querycode[]  =       {50, 50, 50, 50, 50, 50, 50, 50};
 const byte new_addresscode[]  = {51, 51, 51, 51, 51, 51, 51, 51}; 
 const byte limitswitchcode[]  = {52, 52, 52, 52, 52, 52, 52, 52};
 const byte echo[]             = {53, 53, 53, 53, 53, 53, 53, 53};
-const byte CELL_TYPES[]  =      {2,2}; // the length of this array relates to how many cells there are.
+const byte CELL_TYPES[]  =      {1,2,3,4}; // the length of this array relates to how many cells there are.
 const byte CELL_NUM = 			sizeof(CELL_TYPES)/sizeof(byte);
 
 // Pins are arbitrary, and should be changed depending on the requirements.
 
-const int LOCK_PULSE_PIN = 10;	//pin used to pulse decoder enable
-const int LIMIT1_IN = A0; // must be analog in
-const int LIMIT2_IN = A1; // must be analog in
-const int ANALOG_IN = A3;
+const int ANALOG_READ_PIN = A0;
+const int MUX_SELECT[3] = {12,11,10};
+const int DEC_SELECT[3] = {8,7};
+const int DEC_ENABLE = 9;
 
 const int PULSE_DELAY = 500;
 
@@ -50,12 +52,6 @@ const int CMD_BODY_LENGTH = 8;
 Message received_command = Message(); 
 byte writeBuffer[COMMAND_LENGTH];
 
-const byte MUX_1 = 5;
-const byte MUX_2 = 6;
-const byte DEC_1 = 7;
-const byte DEC_2 = 8;
-const byte DEC_CONTROL = 9;
-
 void setup(){
   // Resilient Address
   /*
@@ -71,17 +67,14 @@ void setup(){
   Wire.onRequest(requestEvent);
   Wire.begin(current_address);
   DEBUG_START(9600);
-  pinMode(LIMIT1_IN, INPUT);
-  pinMode(LIMIT2_IN, INPUT);
-  pinMode(ANALOG_IN, INPUT);
-  
-  
-  pinMode(MUX_1, OUTPUT);
-  pinMode(MUX_2, OUTPUT);
-  pinMode(DEC_1, OUTPUT);
-  pinMode(DEC_2, OUTPUT);
-  pinMode(DEC_CONTROL, OUTPUT);
-  digitalWrite(DEC_CONTROL, HIGH);
+  pinMode(ANALOG_READ_PIN, INPUT);
+  pinMode(DEC_ENABLE, OUTPUT);
+  pinMode(MUX_SELECT[0], OUTPUT);
+  pinMode(MUX_SELECT[1], OUTPUT);
+  pinMode(MUX_SELECT[2], OUTPUT);
+  pinMode(DEC_SELECT[0], OUTPUT);
+  pinMode(DEC_SELECT[1], OUTPUT);
+
   
 	  DEBUG_PRINT("Slave: ");
 	  DEBUG_PRINT(current_address);
@@ -158,8 +151,6 @@ void messagePrint(Message msg){
 
 // To avoid embarrasing mass unlock scenarios, pulse timing should be tuned to relay.
 void pulse(int pin){
-  DEBUG_PRINTLN("Pulsing: ");
-  DEBUG_PRINTLN(pin);
   digitalWrite(pin, HIGH);
   delay(PULSE_DELAY);
   digitalWrite(pin, LOW);
@@ -182,51 +173,103 @@ void resetAddress(byte address){
 }
 
 void unlock(byte cell){
-	if (cell == 1){
-		pulse(DEC_1);
+	bool validCell = true;
+	//assuming active low decoder
+	digitalWrite(DEC_ENABLE, HIGH); //disables decoder, all outputs hot
+	switch (cell){
+		case 1:		//output 0 selected
+			digitalWrite(DEC_SELECT[0], LOW);
+			digitalWrite(DEC_SELECT[1], LOW);
+			break;
+		case 2:		//output 1 selected
+			digitalWrite(DEC_SELECT[0], HIGH);
+			digitalWrite(DEC_SELECT[1], LOW);
+			break;
+		case 3:		//output 2  selected
+			digitalWrite(DEC_SELECT[0], LOW);
+			digitalWrite(DEC_SELECT[1], HIGH);
+			break;
+		case 4:		//output 3 selected
+			digitalWrite(DEC_SELECT[0], HIGH);
+			digitalWrite(DEC_SELECT[1], HIGH);
+			break;
+		default:
+			DEBUG_PRINTLN("Invalid cell for limit switch query");
+			validCell = false;
 	}
-	if (cell == 2){
-		pulse(DEC_2);
+	if (validCell){
+		pulseLow(DEC_ENABLE);
+		digitalWrite(DEC_ENABLE, HIGH);
 	}
 }
 
 Message limitQuery(byte cell){
-	if (cell == 1){
+	bool validCell = true;
+	digitalWrite(MUX_SELECT[0], LOW);
+	switch (cell){
+		case 1:
+			digitalWrite(MUX_SELECT[1], LOW);
+			digitalWrite(MUX_SELECT[2], LOW);
+			break;
+		case 2:
+			digitalWrite(MUX_SELECT[1], LOW);
+			digitalWrite(MUX_SELECT[2], HIGH);
+			break;
+		case 3:
+			digitalWrite(MUX_SELECT[1], HIGH);
+			digitalWrite(MUX_SELECT[2], LOW);
+			break;
+		case 4:
+			digitalWrite(MUX_SELECT[1], HIGH);
+			digitalWrite(MUX_SELECT[2], HIGH);
+			break;
+		default:
+			DEBUG_PRINTLN("Invalid cell for limit switch query");
+			validCell = false;
+	}
+	if (validCell){
 		byte type = CELL_TYPES[cell - 1];
-		digitalWrite(MUX_1, LOW);
-		digitalWrite(MUX_2, LOW);
-		int reading = analogRead(LIMIT1_IN);
-		DEBUG_PRINTLN(reading);
+		int reading = analogRead(ANALOG_READ_PIN);
 		byte body[] = {type, highByte(reading), lowByte(reading), 0, 0, 0, 0, 0};
 		return Message(current_address, cell, body);
-	}
-	if (cell == 2){
-		byte type = CELL_TYPES[cell - 1];
-		digitalWrite(MUX_1, HIGH);
-		digitalWrite(MUX_2, LOW);
-		int reading = analogRead(LIMIT2_IN);
-		DEBUG_PRINTLN(reading);
-		byte body[] = {type, highByte(reading), lowByte(reading), 0, 0, 0, 0, 0};
-		return Message(current_address, cell, body);	
+	} else {
+		byte body[] = {255, 255, 255, 255, 255, 255, 255, 255};
+		return Message(current_address, cell, body);
 	}
 }
 
 Message analogQuery(byte cell){
-	if (cell == 1){
+	bool validCell = true;
+	digitalWrite(MUX_SELECT[1], LOW);
+	switch (cell){
+		case 1:
+			digitalWrite(MUX_SELECT[1], LOW);
+			digitalWrite(MUX_SELECT[2], LOW);
+			break;
+		case 2:
+			digitalWrite(MUX_SELECT[1], LOW);
+			digitalWrite(MUX_SELECT[2], HIGH);
+			break;
+		case 3:
+			digitalWrite(MUX_SELECT[1], HIGH);
+			digitalWrite(MUX_SELECT[2], LOW);
+			break;
+		case 4:
+			digitalWrite(MUX_SELECT[1], HIGH);
+			digitalWrite(MUX_SELECT[2], HIGH);
+			break;
+		default:
+			DEBUG_PRINTLN("Invalid cell for analog sensor query");
+			validCell = false;
+	}
+	if (validCell){
 		byte type = CELL_TYPES[cell - 1];
-		digitalWrite(MUX_1, LOW);
-		digitalWrite(MUX_2, HIGH);
-		int reading = analogRead(ANALOG_IN);
+		int reading = analogRead(ANALOG_READ_PIN);
 		byte body[] = {type, highByte(reading), lowByte(reading), 0, 0, 0, 0, 0};
 		return Message(current_address, cell, body);
-	}
-	if (cell == 2){
-		byte type = CELL_TYPES[cell - 1];
-		digitalWrite(MUX_1, HIGH);
-		digitalWrite(MUX_2, HIGH);
-		int reading = analogRead(ANALOG_IN);
-		byte body[] = {type, highByte(reading), lowByte(reading), 0, 0, 0, 0, 0};
-		return Message(current_address, cell, body);	
+	} else {
+		byte body[] = {255, 255, 255, 255, 255, 255, 255, 255};
+		return Message(current_address, cell, body);
 	}
 }
 

@@ -2,6 +2,8 @@
 #include <Message.h>
 #include <avr/pgmspace.h>
 
+//uncomment the line below to enable debug
+//#define DEBUG
 #ifdef DEBUG
 	#define DEBUG_PRINT(x) 		Serial.print(x)
 	#define DEBUG_PRINTLN(x) 	Serial.println(x)
@@ -33,7 +35,6 @@ const int SLAVE_BUFFER = 10;
 const int RESPONSE_LENGTH = 10;
 const int COMMAND_LENGTH = 10; //This is a parameter used in Message, number of bytes contained in a Message
 const int CMD_BODY_LENGTH = COMMAND_LENGTH - 2; //The first two bytes are used as addresses
-const bool DEBUG = false; // controlls various Serial print statements
 
 /////////////////////////////////////////////////////
 // Buffers for reading complete messages from both input ends (front, slaves)
@@ -54,7 +55,6 @@ void setup(){
   Serial.begin(9600);
   while (!Serial){;} // Apparently needed for Serial on Leonardo, we don't know why, and this may introduce problems
   Wire.begin();
-  pinMode(13, OUTPUT);
 }
 
 void loop(){
@@ -121,7 +121,7 @@ void loop(){
 		DEBUG_PRINTLN(response);
 		}
       }
-    }
+    
 
     else if (command == 2){ // Query Limit Switch
 	  DEBUG_PRINTLN("DEBUG - Limit Switch Query . . .");
@@ -185,7 +185,7 @@ void loop(){
 		DEBUG_PRINT("DEBUG - Not Valid Command: ");
 		DEBUG_PRINTLN(command);
     }
-  }
+  
 
   // Periodic Default Address echo request.
   if (cycle == POLL_INTERVAL){
@@ -206,6 +206,7 @@ void loop(){
   isInputComplete = false;
   cycle++;
   delay(CYCLE_DELAY);
+  }
 }
 
 ////////////////////////////////////////////////////
@@ -233,7 +234,7 @@ void readCharArrayFromSerial(byte* buffer, byte num){
 
 void readArrayFromSerial(byte* buffer, byte num, bool isNullTerminated){
   if (Serial.available()){
-    if (DEBUG){ Serial.println("Reading . . .");}
+	DEBUG_PRINTLN("Reading...");
   }
   if (Serial.available() >= 10){    Serial.readBytes((char*)buffer, 10);
     while (Serial.available()){
@@ -358,12 +359,12 @@ void scan(){
 bool isDoorClosed(Message msg){
 	//if active low
 	if (word(msg.command[1], msg.command[2]) < 100){
-		if (DEBUG) { Serial.println("Door closed");}
+		DEBUG_PRINTLN("Door Closed");
 		return true;
+	} else {
+		DEBUG_PRINTLN("Door open");
+		return false;
 	}
-	 if (DEBUG) { Serial.println("Door open"); }
-	return false;
-
 	/*
 	For active high case
 	if (word(msg.command[1], msg.command[2]) > 900){
