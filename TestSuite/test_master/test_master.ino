@@ -3,7 +3,7 @@
 #include <avr/pgmspace.h>
 
 //uncomment the line below to enable debug
-//#define DEBUG
+#define DEBUG
 #ifdef DEBUG
 	#define DEBUG_PRINT(x) 		Serial.print(x)
 	#define DEBUG_PRINTLN(x) 	Serial.println(x)
@@ -61,7 +61,7 @@ void loop(){
   serialEvent();
 
   if (isInputComplete){
-    if (DEBUG) {Serial.println("DEBUG - Shit Just Got Real.");}
+	DEBUG_PRINTLN("DEBUG - Shit Just Got Real.");
     byte col = fromFrontBuffer[1];
     byte cell = fromFrontBuffer[2];
     byte command = parseByteFrontCommand(fromFrontBuffer);
@@ -117,7 +117,7 @@ void loop(){
 		    writeAnalogToFront(msg);
       }
       else {
-		DEBUG_PRINT(DEBUG- Error Querying Sensor - I2C Resp: ");
+		DEBUG_PRINT("DEBUG- Error Querying Sensor - I2C Resp: ");
 		DEBUG_PRINTLN(response);
 		}
       }
@@ -154,7 +154,7 @@ void loop(){
 		msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
 		writeNewAddAcknowledgeToFront(msg);
 		DEBUG_PRINT("DEBUG - New Address Assigned: ");
-		DEBUG_PRINTLN(CELL);
+		DEBUG_PRINTLN(cell);
       } else {
 		DEBUG_PRINTLN("Shit Went Down, we can only watch now");
       }
@@ -164,7 +164,7 @@ void loop(){
 	else if (command == 5){	
 		DEBUG_PRINTLN("DEBUG - Cell Size Query . . .");
 		Message msg = Message(col, cell, string_table[3]);
-		if (DEBUG){ messagePrint(msg);}
+		messagePrint(msg);
 		response = writeToSlave(msg);
 		if (response == 0){
 			DEBUG_PRINTLN("DEBUG - Cell Size Values: ");
@@ -236,7 +236,8 @@ void readArrayFromSerial(byte* buffer, byte num, bool isNullTerminated){
   if (Serial.available()){
 	DEBUG_PRINTLN("Reading...");
   }
-  if (Serial.available() >= 10){    Serial.readBytes((char*)buffer, 10);
+  if (Serial.available() >= 10){    
+    Serial.readBytes((char*)buffer, 10);
     while (Serial.available()){
      Serial.read();
     }
