@@ -17,10 +17,11 @@
 #endif
 
 /////////////////////////////////////////////////////
-// Reference
+// Reference strings used for comprehending messages
+// This list should (read 'must') be consistent across the whole platform
 const byte unlockcode[]   =   {49, 49, 49, 49, 49, 49, 49, 49};
 const byte querycode[]    =   {50, 50, 50, 50, 50, 50, 50, 50};
-const byte new_addresscode[]  =   {51, 51, 51, 51, 51, 51, 51, 51}; 
+const byte new_addresscode[]  =   {51, 51, 51, 51, 51, 51, 51, 51};
 const byte limitswitchcode[]  =   {52, 52, 52, 52, 52, 52, 52, 52};
 const byte echo[] = {53, 53, 53, 53, 53, 53, 53, 53};
 
@@ -30,20 +31,20 @@ const byte DEFAULT_ADDRESS = 5; // THIS SHOULD NEVER BE SET TO 255
 const int FRONT_BUFFER = 10;
 const int SLAVE_BUFFER = 10;
 const int RESPONSE_LENGTH = 10;
-const int COMMAND_LENGTH = 10;
-const int CMD_BODY_LENGTH = COMMAND_LENGTH - 2;
-const bool DEBUG = false;
+const int COMMAND_LENGTH = 10; //This is a parameter used in Message, number of bytes contained in a Message
+const int CMD_BODY_LENGTH = COMMAND_LENGTH - 2; //The first two bytes are used as addresses
+const bool DEBUG = false; // controlls various Serial print statements
 
 /////////////////////////////////////////////////////
-// Buffers and Such
+// Buffers for reading complete messages from both input ends (front, slaves)
 byte fromSlaveBuffer[ RESPONSE_LENGTH ];
 byte fromFrontBuffer[ FRONT_BUFFER ];
 
 /////////////////////////////////////////////////////
 // State Variables
 int cycle = 0;
-const int CYCLE_DELAY = 10;
-const int POLL_INTERVAL = 100; // in integer multiples of 10ms cycles
+const int CYCLE_DELAY = 10; // wait time betwen main loop cycles,
+const int POLL_INTERVAL = 100; // The number of loop cycles to wait before polling the default address for new slaves
 bool newColumnFound   = false;
 bool isInputComplete  = false;
 bool ledon = false;
@@ -51,14 +52,14 @@ bool ledon = false;
 // MAIN
 void setup(){
   Serial.begin(9600);
-  while (!Serial){;} // Apparently needed for Serial on Leonardo
+  while (!Serial){;} // Apparently needed for Serial on Leonardo, we don't know why, and this may introduce problems
   Wire.begin();
   pinMode(13, OUTPUT);
 }
 
 void loop(){
   serialEvent();
-  
+
   if (isInputComplete){
     if (DEBUG) {Serial.println("DEBUG - Shit Just Got Real.");}
     byte col = fromFrontBuffer[1];
@@ -74,11 +75,33 @@ void loop(){
       if (response == 0){
 		DEBUG_PRINTLN("DEBUG - RESPONSE: ");
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
-		msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
+		msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);		
       }
       else {
 		DEBUG_PRINT("DEBUG - Error Unlocking - I2C Resp:");
 		DEBUG_PRINT(response);
+		// unlock cycle, keeps trying to get state of the box to determine when the door closes
+		// this sequence could be moved to the front-end, but the choice is arbitrary at this point
+		/*
+		delay(50);
+		bool doorClosed = false;
+		while(!doorClosed){
+			msg = Message(col, cell, string_table[3]);
+			response = writeToSlave(msg);
+			if (response == 0){
+				requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
+				msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
+				doorClosed = isDoorClosed(msg);
+				writeLimitToFront(msg);
+			} else {
+				//fucking terrible error state
+				if (DEBUG) {
+					Serial.println("All hope is lost");
+					Serial.println(response);
+				}
+			}
+		}
+		*/
       }
     }
 
@@ -90,8 +113,8 @@ void loop(){
       if (response == 0){
 		DEBUG_PRINTLN("DEBUG - Analog Value: ");
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
-		msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
-		writeAnalogToFront(msg);
+	      msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
+		    writeAnalogToFront(msg);
       }
       else {
 		DEBUG_PRINT(DEBUG- Error Querying Sensor - I2C Resp: ");
@@ -122,7 +145,7 @@ void loop(){
     }
 
 	// Reset Address of Specified column. Whereing the cell value is the new address
-    else if (command == 4){ 
+    else if (command == 4){
 	  Message msg = Message(col, cell, string_table[2]);
       messagePrint(msg);
       response = writeToSlave(msg);
@@ -136,12 +159,12 @@ void loop(){
 		DEBUG_PRINTLN("Shit Went Down, we can only watch now");
       }
     }
-	
+
 	//Request Cell Size
 	else if (command == 5){	
 		DEBUG_PRINTLN("DEBUG - Cell Size Query . . .");
 		Message msg = Message(col, cell, string_table[3]);
-		messagePrint(msg);
+		if (DEBUG){ messagePrint(msg);}
 		response = writeToSlave(msg);
 		if (response == 0){
 			DEBUG_PRINTLN("DEBUG - Cell Size Values: ");
@@ -154,8 +177,8 @@ void loop(){
 			DEBUG_PRINTLN(response);
 		}	
 	}
-	
-	else if (command == 9){ //helper debug command
+
+	else if (command == 9){ // helper debug command
 		scan();
 	}
     else {
@@ -197,7 +220,7 @@ void messagePrint(Message msg){
 	DEBUG_PRINT('\n');	
 }
 ////////////////////////////////////////////////////
-
+// Serial Events
 void serialEvent(){
   readByteArrayFromSerial(fromFrontBuffer, FRONT_BUFFER);
 }
@@ -214,10 +237,10 @@ void readArrayFromSerial(byte* buffer, byte num, bool isNullTerminated){
   }
   if (Serial.available() >= 10){    Serial.readBytes((char*)buffer, 10);
     while (Serial.available()){
-     Serial.read(); 
+     Serial.read();
     }
     isInputComplete = true;
-  }  
+  }
 }
 
 /////////////////////////////////////////////////////
@@ -317,9 +340,9 @@ byte parseByteFrontCommand(byte* command){
 void serialFill(byte value, byte fillNum){
 	for (byte i = 0; i < fillNum; i++){
 		Serial.write(value);
-	}	
+	}
 }
-
+// Queries each available I2C address with an echo, prints ack.
 void scan(){
 	for (byte i = 1; i < 127; i++){
 		Message msg = Message(i, 1, string_table[4]);
@@ -330,4 +353,22 @@ void scan(){
 			DEBUG_PRINT(response);
 			DEBUG_PRINT('\n');
 	}
+}
+
+bool isDoorClosed(Message msg){
+	//if active low
+	if (word(msg.command[1], msg.command[2]) < 100){
+		if (DEBUG) { Serial.println("Door closed");}
+		return true;
+	}
+	 if (DEBUG) { Serial.println("Door open"); }
+	return false;
+
+	/*
+	For active high case
+	if (word(msg.command[1], msg.command[2]) > 900){
+		return true
+	}
+	return false;
+	*/
 }
