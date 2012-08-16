@@ -152,14 +152,14 @@ void messagePrint(Message msg){
 // To avoid embarrasing mass unlock scenarios, pulse timing should be tuned to relay.
 void pulse(int pin){
   digitalWrite(pin, HIGH);
-  delay(PULSE_DELAY);
+  delay(2*PULSE_DELAY);
   digitalWrite(pin, LOW);
   return;
 }
 
 void pulseLow(int pin){
   digitalWrite(pin, LOW);
-  delay(PULSE_DELAY);
+  delay(2*PULSE_DELAY);
   digitalWrite(pin, HIGH);
   return;
 }
@@ -240,7 +240,7 @@ Message limitQuery(byte cell){
 
 Message analogQuery(byte cell){
 	bool validCell = true;
-	digitalWrite(MUX_SELECT[1], LOW);
+	digitalWrite(MUX_SELECT[0], HIGH);
 	switch (cell){
 		case 1:
 			digitalWrite(MUX_SELECT[1], LOW);

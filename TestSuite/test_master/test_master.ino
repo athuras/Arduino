@@ -3,7 +3,7 @@
 #include <avr/pgmspace.h>
 
 //uncomment the line below to enable debug
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
 	#define DEBUG_PRINT(x) 		Serial.print(x)
 	#define DEBUG_PRINTLN(x) 	Serial.println(x)
@@ -44,21 +44,22 @@ byte fromFrontBuffer[ FRONT_BUFFER ];
 /////////////////////////////////////////////////////
 // State Variables
 int cycle = 0;
-const int CYCLE_DELAY = 10; // wait time betwen main loop cycles,
-const int POLL_INTERVAL = 100; // The number of loop cycles to wait before polling the default address for new slaves
+const int CYCLE_DELAY = 20; // wait time betwen main loop cycles,
+const int POLL_INTERVAL = 50; // The number of loop cycles to wait before polling the default address for new slaves
 bool newColumnFound   = false;
 bool isInputComplete  = false;
 bool ledon = false;
 
-// MAIN
+// setup() is called on Arduino start-up prior to the first loop() call
 void setup(){
   Serial.begin(9600);
-  while (!Serial){;} // Apparently needed for Serial on Leonardo, we don't know why, and this may introduce problems
+  while (!Serial){;} //prevents program for progressing if a serial connection is not made
   Wire.begin();
 }
 
+//busy loop
 void loop(){
-  serialEvent();
+  serialEvent();	//custom serialEvent() is explicitly called due to unpredictable compilation issues with default implicitly called serialEvent()
 
   if (isInputComplete){
 	DEBUG_PRINTLN("DEBUG - Shit Just Got Real.");
@@ -66,12 +67,19 @@ void loop(){
     byte cell = fromFrontBuffer[2];
     byte command = parseByteFrontCommand(fromFrontBuffer);
     byte response = 0;
+	/*Wire library resposes are 0 through 4
+	* 		   0 .. success
+	*          1 .. length to long for buffer
+	*          2 .. address send, NACK received
+	*          3 .. data send, NACK received
+	*          4 .. other twi error (lost bus arbitration, bus error, ..)
+	*/
 
     if (command == 0){ // Unlock
 	  DEBUG_PRINTLN("DEBUG - Unlock . . .");
       Message msg = Message(col, cell, string_table[0]);
       messagePrint(msg);
-      response = writeToSlave(msg); // anticipate block here
+      response = writeToSlave(msg); 
       if (response == 0){
 		DEBUG_PRINTLN("DEBUG - RESPONSE: ");
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
@@ -80,28 +88,6 @@ void loop(){
       else {
 		DEBUG_PRINT("DEBUG - Error Unlocking - I2C Resp:");
 		DEBUG_PRINT(response);
-		// unlock cycle, keeps trying to get state of the box to determine when the door closes
-		// this sequence could be moved to the front-end, but the choice is arbitrary at this point
-		/*
-		delay(50);
-		bool doorClosed = false;
-		while(!doorClosed){
-			msg = Message(col, cell, string_table[3]);
-			response = writeToSlave(msg);
-			if (response == 0){
-				requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
-				msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
-				doorClosed = isDoorClosed(msg);
-				writeLimitToFront(msg);
-			} else {
-				//fucking terrible error state
-				if (DEBUG) {
-					Serial.println("All hope is lost");
-					Serial.println(response);
-				}
-			}
-		}
-		*/
       }
     }
 
@@ -113,8 +99,8 @@ void loop(){
       if (response == 0){
 		DEBUG_PRINTLN("DEBUG - Analog Value: ");
         requestCallBack(col, fromSlaveBuffer, RESPONSE_LENGTH);
-	      msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
-		    writeAnalogToFront(msg);
+	    msg.deserialize(fromSlaveBuffer, RESPONSE_LENGTH);
+		writeAnalogToFront(msg);
       }
       else {
 		DEBUG_PRINT("DEBUG- Error Querying Sensor - I2C Resp: ");
@@ -140,11 +126,15 @@ void loop(){
       }
     }
 
-    else if (command == 3){ // Request Column POST (all limit switches) //probably not used
+    else if (command == 3){ // Request Column POST (all limit switches) 
 	  DEBUG_PRINTLN("DEBUG - Case 3");
+	  //not implemented in time
+	  //intended to sequentially query the limit switch of every locker in the column
+	  //not core functionality
     }
 
-	// Reset Address of Specified column. Whereing the cell value is the new address
+	// Reset Address of Specified column
+	// The value held in the cell byte of the message contains the new address value
     else if (command == 4){
 	  Message msg = Message(col, cell, string_table[2]);
       messagePrint(msg);
@@ -186,7 +176,7 @@ void loop(){
 		DEBUG_PRINTLN(command);
     }
   
-
+}
   // Periodic Default Address echo request.
   if (cycle == POLL_INTERVAL){
 	DEBUG_PRINT("Polling Default: ");
@@ -206,7 +196,7 @@ void loop(){
   isInputComplete = false;
   cycle++;
   delay(CYCLE_DELAY);
-  }
+  
 }
 
 ////////////////////////////////////////////////////
@@ -246,7 +236,7 @@ void readArrayFromSerial(byte* buffer, byte num, bool isNullTerminated){
 }
 
 /////////////////////////////////////////////////////
-// Communication Methods
+// Master -->Slave Communications Methods
 byte writeToSlave(Message msg){
   Wire.beginTransmission(msg.col);
   Wire.write(msg.col);
@@ -272,6 +262,8 @@ void requestCallBack(byte column, byte* buffer, byte num){
   }
 }
 
+/////////////////////////////////////////////////////
+// Master --> Front End Communication Methods
 void writeLimitToFront(Message msg){
 	Serial.write('l');
 	Serial.write(msg.col);
@@ -339,12 +331,14 @@ byte parseByteFrontCommand(byte* command){
 	}
 }
 
+//writes value to Serial, fillNum times
 void serialFill(byte value, byte fillNum){
 	for (byte i = 0; i < fillNum; i++){
 		Serial.write(value);
 	}
 }
-// Queries each available I2C address with an echo, prints ack.
+// Queries each available I2C address with an echo, prints acknowldge
+// A debug helper function
 void scan(){
 	for (byte i = 1; i < 127; i++){
 		Message msg = Message(i, 1, string_table[4]);
